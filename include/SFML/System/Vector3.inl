@@ -22,6 +22,11 @@
 //
 ////////////////////////////////////////////////////////////
 
+// Disable the GCC warnings
+#if defined(__GNUG__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
 
 ////////////////////////////////////////////////////////////
 template <typename T>
