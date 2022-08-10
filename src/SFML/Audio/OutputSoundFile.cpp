@@ -26,15 +26,14 @@
 // Headers
 ////////////////////////////////////////////////////////////
 #include <SFML/Audio/OutputSoundFile.hpp>
-#include <SFML/Audio/SoundFileWriter.hpp>
 #include <SFML/Audio/SoundFileFactory.hpp>
+#include <SFML/Audio/SoundFileWriter.hpp>
 
 
 namespace sf
 {
 ////////////////////////////////////////////////////////////
-OutputSoundFile::OutputSoundFile() :
-m_writer(nullptr)
+OutputSoundFile::OutputSoundFile() : m_writer(nullptr)
 {
 }
 
@@ -48,7 +47,7 @@ OutputSoundFile::~OutputSoundFile()
 
 
 ////////////////////////////////////////////////////////////
-bool OutputSoundFile::openFromFile(const std::string& filename, unsigned int sampleRate, unsigned int channelCount)
+bool OutputSoundFile::openFromFile(const std::filesystem::path& filename, unsigned int sampleRate, unsigned int channelCount)
 {
     // If the file is already open, first close it
     close();

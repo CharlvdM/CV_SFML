@@ -49,7 +49,6 @@ namespace priv
 class WindowImplUIKit : public WindowImpl
 {
 public:
-
     ////////////////////////////////////////////////////////////
     /// \brief Construct the window implementation from an existing control
     ///
@@ -126,12 +125,11 @@ public:
     ////////////////////////////////////////////////////////////
     /// \brief Change the window's icon
     ///
-    /// \param width  Icon's width, in pixels
-    /// \param height Icon's height, in pixels
+    /// \param size   Icon's width and height, in pixels
     /// \param pixels Pointer to the pixels in memory, format must be RGBA 32 bits
     ///
     ////////////////////////////////////////////////////////////
-    void setIcon(unsigned int width, unsigned int height, const Uint8* pixels) override;
+    void setIcon(const Vector2u& size, const Uint8* pixels) override;
 
     ////////////////////////////////////////////////////////////
     /// \brief Show or hide the window
@@ -189,7 +187,6 @@ public:
     bool hasFocus() const override;
 
 public:
-
     ////////////////////////////////////////////////////////////
     /// \brief Notify an event
     ///
@@ -215,7 +212,6 @@ public:
     void setVirtualKeyboardVisible(bool visible);
 
 protected:
-
     ////////////////////////////////////////////////////////////
     /// \brief Process incoming events from the operating system
     ///
@@ -223,7 +219,6 @@ protected:
     void processEvents() override;
 
 private:
-
     ////////////////////////////////////////////////////////////
     // Member data
     ////////////////////////////////////////////////////////////

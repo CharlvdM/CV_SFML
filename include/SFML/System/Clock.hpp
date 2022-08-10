@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2021 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -29,7 +29,7 @@
 // Headers
 ////////////////////////////////////////////////////////////
 #include <SFML/System/Export.hpp>
-#include <SFML/System/Time.hpp>
+
 #include <chrono>
 #include <ratio>
 #include <type_traits>
@@ -70,15 +70,16 @@ namespace priv
 ///
 ////////////////////////////////////////////////////////////
 #if defined(SFML_SYSTEM_ANDROID) && defined(SFML_ANDROID_USE_SUSPEND_AWARE_CLOCK)
-    using MostSuitableClock = SuspendAwareClock;
+using MostSuitableClock = SuspendAwareClock;
 #else
-    using MostSuitableClock = std::conditional_t<
-        std::chrono::high_resolution_clock::is_steady,
-        std::chrono::high_resolution_clock,
-        std::chrono::steady_clock>;
+using MostSuitableClock = std::conditional_t<std::chrono::high_resolution_clock::is_steady,
+                                             std::chrono::high_resolution_clock,
+                                             std::chrono::steady_clock>;
 #endif
 
 } // namespace priv
+
+class Time;
 
 ////////////////////////////////////////////////////////////
 /// \brief Utility class that measures the elapsed time
@@ -87,7 +88,6 @@ namespace priv
 class SFML_SYSTEM_API Clock
 {
 public:
-
     ////////////////////////////////////////////////////////////
     /// \brief Default constructor
     ///
@@ -122,10 +122,9 @@ public:
 private:
     using ClockImpl = priv::MostSuitableClock;
 
-    static_assert(ClockImpl::is_steady,
-        "Provided implementation is not a monotonic clock");
+    static_assert(ClockImpl::is_steady, "Provided implementation is not a monotonic clock");
     static_assert(std::ratio_less_equal<ClockImpl::period, std::micro>::value,
-        "Clock resolution is too low. Expecting at least a microsecond precision");
+                  "Clock resolution is too low. Expecting at least a microsecond precision");
 
     ////////////////////////////////////////////////////////////
     /// \brief Convert clock duration to Time

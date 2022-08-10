@@ -29,7 +29,10 @@
 // Headers
 ////////////////////////////////////////////////////////////
 #include <SFML/Config.hpp>
+
 #include <SFML/System/Vector2.hpp>
+
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -47,7 +50,6 @@ namespace priv
 class ImageLoader
 {
 public:
-
     ////////////////////////////////////////////////////////////
     /// \brief Get the unique instance of the class
     ///
@@ -66,7 +68,7 @@ public:
     /// \return True if loading was successful
     ///
     ////////////////////////////////////////////////////////////
-    bool loadImageFromFile(const std::string& filename, std::vector<Uint8>& pixels, Vector2u& size);
+    bool loadImageFromFile(const std::filesystem::path& filename, std::vector<Uint8>& pixels, Vector2u& size);
 
     ////////////////////////////////////////////////////////////
     /// \brief Load an image from a file in memory
@@ -103,7 +105,7 @@ public:
     /// \return True if saving was successful
     ///
     ////////////////////////////////////////////////////////////
-    bool saveImageToFile(const std::string& filename, const std::vector<Uint8>& pixels, const Vector2u& size);
+    bool saveImageToFile(const std::filesystem::path& filename, const std::vector<Uint8>& pixels, const Vector2u& size);
 
     ////////////////////////////////////////////////////////////
     /// \brief Save an array of pixels as an encoded image buffer
@@ -116,21 +118,17 @@ public:
     /// \return True if saving was successful
     ///
     ////////////////////////////////////////////////////////////
-    bool saveImageToMemory(const std::string& format, std::vector<sf::Uint8>& output, const std::vector<Uint8>& pixels, const Vector2u& size);
+    bool saveImageToMemory(const std::string&        format,
+                           std::vector<sf::Uint8>&   output,
+                           const std::vector<Uint8>& pixels,
+                           const Vector2u&           size);
 
 private:
-
     ////////////////////////////////////////////////////////////
     /// \brief Default constructor
     ///
     ////////////////////////////////////////////////////////////
     ImageLoader();
-
-    ////////////////////////////////////////////////////////////
-    /// \brief Destructor
-    ///
-    ////////////////////////////////////////////////////////////
-    ~ImageLoader();
 
     ////////////////////////////////////////////////////////////
     /// \brief Deleted copy constructor

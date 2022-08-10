@@ -29,6 +29,7 @@
 // Headers
 ////////////////////////////////////////////////////////////
 #include <SFML/Audio/SoundFileReader.hpp>
+
 #include <FLAC/stream_decoder.h>
 #include <vector>
 
@@ -44,7 +45,6 @@ namespace priv
 class SoundFileReaderFlac : public SoundFileReader
 {
 public:
-
     ////////////////////////////////////////////////////////////
     /// \brief Check if this reader can handle a file given by an input stream
     ///
@@ -53,10 +53,9 @@ public:
     /// \return True if the file is supported by this reader
     ///
     ////////////////////////////////////////////////////////////
-    static bool check(InputStream& stream);
+    [[nodiscard]] static bool check(InputStream& stream);
 
 public:
-
     ////////////////////////////////////////////////////////////
     /// \brief Default constructor
     ///
@@ -76,7 +75,7 @@ public:
     /// \param info   Structure to fill with the attributes of the loaded sound
     ///
     ////////////////////////////////////////////////////////////
-    bool open(sf::InputStream& stream, Info& info) override;
+    [[nodiscard]] bool open(sf::InputStream& stream, Info& info) override;
 
     ////////////////////////////////////////////////////////////
     /// \brief Change the current read position to the given sample offset
@@ -102,10 +101,9 @@ public:
     /// \return Number of samples actually read (may be less than \a maxCount)
     ///
     ////////////////////////////////////////////////////////////
-    Uint64 read(Int16* samples, Uint64 maxCount) override;
+    [[nodiscard]] Uint64 read(Int16* samples, Uint64 maxCount) override;
 
 public:
-
     ////////////////////////////////////////////////////////////
     /// \brief Hold the state that is passed to the decoder callbacks
     ///
@@ -121,7 +119,6 @@ public:
     };
 
 private:
-
     ////////////////////////////////////////////////////////////
     /// \brief Close the open FLAC file
     ///

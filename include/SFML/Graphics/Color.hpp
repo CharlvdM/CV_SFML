@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2021 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -40,7 +40,6 @@ namespace sf
 class Color
 {
 public:
-
     ////////////////////////////////////////////////////////////
     /// \brief Default constructor
     ///
@@ -80,15 +79,15 @@ public:
     ////////////////////////////////////////////////////////////
     // Static member data
     ////////////////////////////////////////////////////////////
-    SFML_GRAPHICS_API static const Color Black;       //!< Black predefined color
-    SFML_GRAPHICS_API static const Color White;       //!< White predefined color
-    SFML_GRAPHICS_API static const Color Red;         //!< Red predefined color
-    SFML_GRAPHICS_API static const Color Green;       //!< Green predefined color
-    SFML_GRAPHICS_API static const Color Blue;        //!< Blue predefined color
-    SFML_GRAPHICS_API static const Color Yellow;      //!< Yellow predefined color
-    SFML_GRAPHICS_API static const Color Magenta;     //!< Magenta predefined color
-    SFML_GRAPHICS_API static const Color Cyan;        //!< Cyan predefined color
-    SFML_GRAPHICS_API static const Color Transparent; //!< Transparent (black) predefined color
+    static const Color Black;       //!< Black predefined color
+    static const Color White;       //!< White predefined color
+    static const Color Red;         //!< Red predefined color
+    static const Color Green;       //!< Green predefined color
+    static const Color Blue;        //!< Blue predefined color
+    static const Color Yellow;      //!< Yellow predefined color
+    static const Color Magenta;     //!< Magenta predefined color
+    static const Color Cyan;        //!< Cyan predefined color
+    static const Color Transparent; //!< Transparent (black) predefined color
 
     ////////////////////////////////////////////////////////////
     // Member data
@@ -111,7 +110,7 @@ public:
 /// \return True if colors are equal, false if they are different
 ///
 ////////////////////////////////////////////////////////////
-[[nodiscard]] constexpr bool operator ==(const Color& left, const Color& right);
+[[nodiscard]] constexpr bool operator==(const Color& left, const Color& right);
 
 ////////////////////////////////////////////////////////////
 /// \relates Color
@@ -125,7 +124,7 @@ public:
 /// \return True if colors are different, false if they are equal
 ///
 ////////////////////////////////////////////////////////////
-[[nodiscard]] constexpr bool operator !=(const Color& left, const Color& right);
+[[nodiscard]] constexpr bool operator!=(const Color& left, const Color& right);
 
 ////////////////////////////////////////////////////////////
 /// \relates Color
@@ -140,7 +139,7 @@ public:
 /// \return Result of \a left + \a right
 ///
 ////////////////////////////////////////////////////////////
-[[nodiscard]] constexpr Color operator +(const Color& left, const Color& right);
+[[nodiscard]] constexpr Color operator+(const Color& left, const Color& right);
 
 ////////////////////////////////////////////////////////////
 /// \relates Color
@@ -155,7 +154,7 @@ public:
 /// \return Result of \a left - \a right
 ///
 ////////////////////////////////////////////////////////////
-[[nodiscard]] constexpr Color operator -(const Color& left, const Color& right);
+[[nodiscard]] constexpr Color operator-(const Color& left, const Color& right);
 
 ////////////////////////////////////////////////////////////
 /// \relates Color
@@ -172,7 +171,7 @@ public:
 /// \return Result of \a left * \a right
 ///
 ////////////////////////////////////////////////////////////
-[[nodiscard]] constexpr Color operator *(const Color& left, const Color& right);
+[[nodiscard]] constexpr Color operator*(const Color& left, const Color& right);
 
 ////////////////////////////////////////////////////////////
 /// \relates Color
@@ -188,7 +187,7 @@ public:
 /// \return Reference to \a left
 ///
 ////////////////////////////////////////////////////////////
-constexpr Color& operator +=(Color& left, const Color& right);
+constexpr Color& operator+=(Color& left, const Color& right);
 
 ////////////////////////////////////////////////////////////
 /// \relates Color
@@ -204,7 +203,7 @@ constexpr Color& operator +=(Color& left, const Color& right);
 /// \return Reference to \a left
 ///
 ////////////////////////////////////////////////////////////
-constexpr Color& operator -=(Color& left, const Color& right);
+constexpr Color& operator-=(Color& left, const Color& right);
 
 ////////////////////////////////////////////////////////////
 /// \relates Color
@@ -222,7 +221,7 @@ constexpr Color& operator -=(Color& left, const Color& right);
 /// \return Reference to \a left
 ///
 ////////////////////////////////////////////////////////////
-constexpr Color& operator *=(Color& left, const Color& right);
+constexpr Color& operator*=(Color& left, const Color& right);
 
 #include <SFML/Graphics/Color.inl>
 

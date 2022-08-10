@@ -25,8 +25,10 @@
 ////////////////////////////////////////////////////////////
 // Headers
 ////////////////////////////////////////////////////////////
-#include <SFML/Window/SensorManager.hpp>
 #include <SFML/System/Err.hpp>
+#include <SFML/Window/SensorManager.hpp>
+
+#include <ostream>
 
 
 namespace sf
@@ -58,7 +60,8 @@ void SensorManager::setEnabled(Sensor::Type sensor, bool enabled)
     }
     else
     {
-        err() << "Warning: trying to enable a sensor that is not available (call Sensor::isAvailable to check it)" << std::endl;
+        err() << "Warning: trying to enable a sensor that is not available (call Sensor::isAvailable to check it)"
+              << std::endl;
     }
 }
 
@@ -104,8 +107,15 @@ SensorManager::SensorManager()
         // Open the available sensors
         if (m_sensors[i].available)
         {
-            m_sensors[i].sensor.open(static_cast<Sensor::Type>(i));
-            m_sensors[i].sensor.setEnabled(false);
+            if (m_sensors[i].sensor.open(static_cast<Sensor::Type>(i)))
+            {
+                m_sensors[i].sensor.setEnabled(false);
+            }
+            else
+            {
+                m_sensors[i].available = false;
+                err() << "Warning: sensor " << i << " failed to open, will not be available" << std::endl;
+            }
         }
     }
 }

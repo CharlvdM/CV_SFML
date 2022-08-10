@@ -1,8 +1,10 @@
 #include <SFML/System/Clock.hpp>
-#include "SystemUtil.hpp"
-#include <thread>
+#include <SFML/System/Time.hpp>
 
-#include <doctest.h>
+#include <doctest/doctest.h>
+
+#include <SystemUtil.hpp>
+#include <thread>
 
 TEST_CASE("sf::Clock class - [system]")
 {

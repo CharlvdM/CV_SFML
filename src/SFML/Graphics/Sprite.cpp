@@ -25,35 +25,30 @@
 ////////////////////////////////////////////////////////////
 // Headers
 ////////////////////////////////////////////////////////////
+#include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Texture.hpp>
-#include <SFML/Graphics/RenderTarget.hpp>
+
 #include <cstdlib>
 
 
 namespace sf
 {
 ////////////////////////////////////////////////////////////
-Sprite::Sprite() :
-m_texture    (nullptr),
-m_textureRect()
+Sprite::Sprite() : m_texture(nullptr), m_textureRect()
 {
 }
 
 
 ////////////////////////////////////////////////////////////
-Sprite::Sprite(const Texture& texture) :
-m_texture    (nullptr),
-m_textureRect()
+Sprite::Sprite(const Texture& texture) : m_texture(nullptr), m_textureRect()
 {
     setTexture(texture, true);
 }
 
 
 ////////////////////////////////////////////////////////////
-Sprite::Sprite(const Texture& texture, const IntRect& rectangle) :
-m_texture    (nullptr),
-m_textureRect()
+Sprite::Sprite(const Texture& texture, const IntRect& rectangle) : m_texture(nullptr), m_textureRect()
 {
     // Compute the texture area
     setTextureRect(rectangle);
@@ -123,7 +118,7 @@ const Color& Sprite::getColor() const
 ////////////////////////////////////////////////////////////
 FloatRect Sprite::getLocalBounds() const
 {
-    auto width = static_cast<float>(std::abs(m_textureRect.width));
+    auto width  = static_cast<float>(std::abs(m_textureRect.width));
     auto height = static_cast<float>(std::abs(m_textureRect.height));
 
     return FloatRect({0.f, 0.f}, {width, height});
@@ -138,13 +133,15 @@ FloatRect Sprite::getGlobalBounds() const
 
 
 ////////////////////////////////////////////////////////////
-void Sprite::draw(RenderTarget& target, RenderStates states) const
+void Sprite::draw(RenderTarget& target, const RenderStates& states) const
 {
     if (m_texture)
     {
-        states.transform *= getTransform();
-        states.texture = m_texture;
-        target.draw(m_vertices, 4, TriangleStrip, states);
+        RenderStates statesCopy(states);
+
+        statesCopy.transform *= getTransform();
+        statesCopy.texture = m_texture;
+        target.draw(m_vertices, 4, TriangleStrip, statesCopy);
     }
 }
 

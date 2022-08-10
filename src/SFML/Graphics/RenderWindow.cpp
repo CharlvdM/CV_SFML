@@ -25,17 +25,17 @@
 ////////////////////////////////////////////////////////////
 // Headers
 ////////////////////////////////////////////////////////////
-#include <SFML/Graphics/RenderWindow.hpp>
-#include <SFML/Graphics/Texture.hpp>
 #include <SFML/Graphics/GLCheck.hpp>
 #include <SFML/Graphics/RenderTextureImplFBO.hpp>
+#include <SFML/Graphics/RenderWindow.hpp>
+#include <SFML/Graphics/Texture.hpp>
+#include <SFML/Window/VideoMode.hpp>
 
 
 namespace sf
 {
 ////////////////////////////////////////////////////////////
-RenderWindow::RenderWindow() :
-m_defaultFrameBuffer(0)
+RenderWindow::RenderWindow() : m_defaultFrameBuffer(0)
 {
     // Nothing to do
 }
@@ -51,8 +51,7 @@ m_defaultFrameBuffer(0)
 
 
 ////////////////////////////////////////////////////////////
-RenderWindow::RenderWindow(WindowHandle handle, const ContextSettings& settings) :
-m_defaultFrameBuffer(0)
+RenderWindow::RenderWindow(WindowHandle handle, const ContextSettings& settings) : m_defaultFrameBuffer(0)
 {
     // Don't call the base class constructor because it contains virtual function calls
     Window::create(handle, settings);
@@ -60,10 +59,7 @@ m_defaultFrameBuffer(0)
 
 
 ////////////////////////////////////////////////////////////
-RenderWindow::~RenderWindow()
-{
-    // Nothing to do
-}
+RenderWindow::~RenderWindow() = default;
 
 
 ////////////////////////////////////////////////////////////

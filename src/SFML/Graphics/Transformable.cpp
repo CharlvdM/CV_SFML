@@ -26,6 +26,7 @@
 // Headers
 ////////////////////////////////////////////////////////////
 #include <SFML/Graphics/Transformable.hpp>
+
 #include <cmath>
 
 
@@ -33,41 +34,37 @@ namespace sf
 {
 ////////////////////////////////////////////////////////////
 Transformable::Transformable() :
-m_origin                    (0, 0),
-m_position                  (0, 0),
-m_rotation                  (0),
-m_scale                     (1, 1),
-m_transform                 (),
-m_transformNeedUpdate       (true),
-m_inverseTransform          (),
+m_origin(0, 0),
+m_position(0, 0),
+m_rotation(),
+m_scale(1, 1),
+m_transform(),
+m_transformNeedUpdate(true),
+m_inverseTransform(),
 m_inverseTransformNeedUpdate(true)
 {
 }
 
 
 ////////////////////////////////////////////////////////////
-Transformable::~Transformable()
-{
-}
+Transformable::~Transformable() = default;
 
 
 ////////////////////////////////////////////////////////////
 void Transformable::setPosition(const Vector2f& position)
 {
-    m_position = position;
-    m_transformNeedUpdate = true;
+    m_position                   = position;
+    m_transformNeedUpdate        = true;
     m_inverseTransformNeedUpdate = true;
 }
 
 
 ////////////////////////////////////////////////////////////
-void Transformable::setRotation(float angle)
+void Transformable::setRotation(Angle angle)
 {
-    m_rotation = std::fmod(angle, 360.f);
-    if (m_rotation < 0)
-        m_rotation += 360.f;
+    m_rotation = angle.wrapUnsigned();
 
-    m_transformNeedUpdate = true;
+    m_transformNeedUpdate        = true;
     m_inverseTransformNeedUpdate = true;
 }
 
@@ -75,8 +72,8 @@ void Transformable::setRotation(float angle)
 ////////////////////////////////////////////////////////////
 void Transformable::setScale(const Vector2f& factors)
 {
-    m_scale = factors;
-    m_transformNeedUpdate = true;
+    m_scale                      = factors;
+    m_transformNeedUpdate        = true;
     m_inverseTransformNeedUpdate = true;
 }
 
@@ -84,8 +81,8 @@ void Transformable::setScale(const Vector2f& factors)
 ////////////////////////////////////////////////////////////
 void Transformable::setOrigin(const Vector2f& origin)
 {
-    m_origin = origin;
-    m_transformNeedUpdate = true;
+    m_origin                     = origin;
+    m_transformNeedUpdate        = true;
     m_inverseTransformNeedUpdate = true;
 }
 
@@ -98,7 +95,7 @@ const Vector2f& Transformable::getPosition() const
 
 
 ////////////////////////////////////////////////////////////
-float Transformable::getRotation() const
+Angle Transformable::getRotation() const
 {
     return m_rotation;
 }
@@ -126,7 +123,7 @@ void Transformable::move(const Vector2f& offset)
 
 
 ////////////////////////////////////////////////////////////
-void Transformable::rotate(float angle)
+void Transformable::rotate(Angle angle)
 {
     setRotation(m_rotation + angle);
 }
@@ -145,7 +142,7 @@ const Transform& Transformable::getTransform() const
     // Recompute the combined transform if needed
     if (m_transformNeedUpdate)
     {
-        float angle  = -m_rotation * 3.141592654f / 180.f;
+        float angle  = -m_rotation.asRadians();
         float cosine = std::cos(angle);
         float sine   = std::sin(angle);
         float sxc    = m_scale.x * cosine;
@@ -153,11 +150,13 @@ const Transform& Transformable::getTransform() const
         float sxs    = m_scale.x * sine;
         float sys    = m_scale.y * sine;
         float tx     = -m_origin.x * sxc - m_origin.y * sys + m_position.x;
-        float ty     =  m_origin.x * sxs - m_origin.y * syc + m_position.y;
+        float ty     = m_origin.x * sxs - m_origin.y * syc + m_position.y;
 
+        // clang-format off
         m_transform = Transform( sxc, sys, tx,
                                 -sxs, syc, ty,
                                  0.f, 0.f, 1.f);
+        // clang-format on
         m_transformNeedUpdate = false;
     }
 
@@ -171,7 +170,7 @@ const Transform& Transformable::getInverseTransform() const
     // Recompute the inverse transform if needed
     if (m_inverseTransformNeedUpdate)
     {
-        m_inverseTransform = getTransform().getInverse();
+        m_inverseTransform           = getTransform().getInverse();
         m_inverseTransformNeedUpdate = false;
     }
 

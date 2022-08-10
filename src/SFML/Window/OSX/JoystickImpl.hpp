@@ -30,6 +30,7 @@
 // Headers
 ////////////////////////////////////////////////////////////
 #include <SFML/Window/JoystickImpl.hpp>
+
 #include <CoreFoundation/CoreFoundation.h>
 #include <IOKit/hid/IOHIDDevice.h>
 #include <IOKit/hid/IOHIDKeys.h>
@@ -47,7 +48,6 @@ namespace priv
 class JoystickImpl
 {
 public:
-
     ////////////////////////////////////////////////////////////
     /// \brief Perform the global initialization of the joystick module
     ///
@@ -78,7 +78,7 @@ public:
     /// \return True on success, false on failure
     ///
     ////////////////////////////////////////////////////////////
-    bool open(unsigned int index);
+    [[nodiscard]] bool open(unsigned int index);
 
     ////////////////////////////////////////////////////////////
     /// \brief Close the joystick
@@ -108,15 +108,14 @@ public:
     /// \return Joystick state
     ///
     ////////////////////////////////////////////////////////////
-    JoystickState update();
+    [[nodiscard]] JoystickState update();
 
 private:
-
     ////////////////////////////////////////////////////////////
     // Member data
     ////////////////////////////////////////////////////////////
-    using Location = long;
-    using AxisMap = std::unordered_map<sf::Joystick::Axis, IOHIDElementRef>;
+    using Location      = long;
+    using AxisMap       = std::unordered_map<sf::Joystick::Axis, IOHIDElementRef>;
     using ButtonsVector = std::vector<IOHIDElementRef>;
 
     AxisMap                  m_axis;           ///< Axes (but not POV/Hat) of the joystick

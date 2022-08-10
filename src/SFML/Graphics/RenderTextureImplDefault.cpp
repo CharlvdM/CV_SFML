@@ -25,10 +25,12 @@
 ////////////////////////////////////////////////////////////
 // Headers
 ////////////////////////////////////////////////////////////
-#include <SFML/Graphics/RenderTextureImplDefault.hpp>
 #include <SFML/Graphics/GLCheck.hpp>
+#include <SFML/Graphics/RenderTextureImplDefault.hpp>
 #include <SFML/Graphics/TextureSaver.hpp>
 #include <SFML/Window/Context.hpp>
+#include <SFML/Window/ContextSettings.hpp>
+
 #include <memory>
 
 
@@ -37,12 +39,8 @@ namespace sf
 namespace priv
 {
 ////////////////////////////////////////////////////////////
-RenderTextureImplDefault::RenderTextureImplDefault() :
-m_context(),
-m_width  (0),
-m_height (0)
+RenderTextureImplDefault::RenderTextureImplDefault() : m_context(), m_size(0, 0)
 {
-
 }
 
 
@@ -61,14 +59,13 @@ unsigned int RenderTextureImplDefault::getMaximumAntialiasingLevel()
 
 
 ////////////////////////////////////////////////////////////
-bool RenderTextureImplDefault::create(unsigned int width, unsigned int height, unsigned int, const ContextSettings& settings)
+bool RenderTextureImplDefault::create(const Vector2u& size, unsigned int, const ContextSettings& settings)
 {
     // Store the dimensions
-    m_width = width;
-    m_height = height;
+    m_size = size;
 
     // Create the in-memory OpenGL context
-    m_context = std::make_unique<Context>(settings, width, height);
+    m_context = std::make_unique<Context>(settings, size);
 
     return true;
 }
@@ -96,7 +93,8 @@ void RenderTextureImplDefault::updateTexture(unsigned int textureId)
 
     // Copy the rendered pixels to the texture
     glCheck(glBindTexture(GL_TEXTURE_2D, textureId));
-    glCheck(glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, static_cast<GLsizei>(m_width), static_cast<GLsizei>(m_height)));
+    glCheck(
+        glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, static_cast<GLsizei>(m_size.x), static_cast<GLsizei>(m_size.y)));
 }
 
 } // namespace priv

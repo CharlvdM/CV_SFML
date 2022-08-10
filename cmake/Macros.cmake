@@ -73,7 +73,13 @@ macro(sfml_add_library module)
     # enable C++17 support
     target_compile_features(${target} PUBLIC cxx_std_17)
 
-    set_file_warnings(${THIS_SOURCES})
+    # Add required flags for GCC if coverage reporting is enabled
+    if (SFML_ENABLE_COVERAGE AND (SFML_COMPILER_GCC OR SFML_COMPILER_CLANG))
+        target_compile_options(${target} PUBLIC $<$<CONFIG:DEBUG>:-O0> $<$<CONFIG:DEBUG>:-g> $<$<CONFIG:DEBUG>:-fprofile-arcs> $<$<CONFIG:DEBUG>:-ftest-coverage>)
+        target_link_options(${target} PUBLIC $<$<CONFIG:DEBUG>:--coverage>)
+    endif()
+
+    set_target_warnings(${target})
 
     # define the export symbol of the module
     string(REPLACE "-" "_" NAME_UPPER "${target}")
@@ -81,7 +87,7 @@ macro(sfml_add_library module)
     set_target_properties(${target} PROPERTIES DEFINE_SYMBOL ${NAME_UPPER}_EXPORTS)
 
     # define the export name of the module
-    set_target_properties(${target} PROPERTIES EXPORT_NAME ${module})
+    set_target_properties(${target} PROPERTIES EXPORT_NAME SFML::${module})
 
     # adjust the output file prefix/suffix to match our conventions
     if(BUILD_SHARED_LIBS AND NOT THIS_STATIC)
@@ -160,11 +166,10 @@ macro(sfml_add_library module)
         endif()
     endif()
 
-    # if using gcc or clang on a non-Windows platform, we must hide public symbols by default
-    # (exported ones are explicitly marked)
-    if(NOT SFML_OS_WINDOWS AND (SFML_COMPILER_GCC OR SFML_COMPILER_CLANG))
-        set_target_properties(${target} PROPERTIES COMPILE_FLAGS -fvisibility=hidden)
-    endif()
+    # ensure public symbols are hidden by default (exported ones are explicitly marked)
+    set_target_properties(${target} PROPERTIES
+                          CXX_VISIBILITY_PRESET hidden
+                          VISIBILITY_INLINES_HIDDEN YES)
 
     # build frameworks or dylibs
     if(SFML_OS_MACOSX AND BUILD_SHARED_LIBS AND NOT THIS_STATIC)
@@ -183,11 +188,7 @@ macro(sfml_add_library module)
         if(NOT CMAKE_SKIP_RPATH AND NOT CMAKE_SKIP_INSTALL_RPATH AND NOT CMAKE_INSTALL_RPATH AND NOT CMAKE_INSTALL_RPATH_USE_LINK_PATH AND NOT CMAKE_INSTALL_NAME_DIR)
             set_target_properties(${target} PROPERTIES INSTALL_NAME_DIR "@rpath")
             if(NOT CMAKE_SKIP_BUILD_RPATH)
-                if (CMAKE_VERSION VERSION_LESS 3.9)
-                    set_target_properties(${target} PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
-                else()
-                    set_target_properties(${target} PROPERTIES BUILD_WITH_INSTALL_NAME_DIR TRUE)
-                endif()
+                set_target_properties(${target} PROPERTIES BUILD_WITH_INSTALL_NAME_DIR TRUE)
             endif()
         endif()
     endif()
@@ -275,7 +276,7 @@ macro(sfml_add_example target)
         add_executable(${target} ${target_input})
     endif()
 
-    set_file_warnings(${target_input})
+    set_target_warnings(${target})
 
     # set the debug suffix
     set_target_properties(${target} PROPERTIES DEBUG_POSTFIX -d)
@@ -316,7 +317,17 @@ function(sfml_add_test target SOURCES DEPENDS)
     set_target_properties(${target} PROPERTIES FOLDER "Tests")
 
     # link the target to its SFML dependencies
-    target_link_libraries(${target} PRIVATE ${DEPENDS})
+    target_link_libraries(${target} PRIVATE ${DEPENDS} sfml-test-main)
+
+    set_target_warnings(${target})
+
+    # If coverage is enabled for MSVC and we are linking statically, use /WHOLEARCHIVE
+    # to make sure the linker doesn't discard unused code sections before coverage can be measured
+    if (SFML_ENABLE_COVERAGE AND SFML_COMPILER_MSVC AND NOT BUILD_SHARED_LIBS)
+        foreach (DEPENDENCY ${DEPENDS})
+            target_link_options(${target} PRIVATE $<$<CONFIG:DEBUG>:/WHOLEARCHIVE:$<TARGET_LINKER_FILE:${DEPENDENCY}>>)
+        endforeach()
+    endif()
 
     # Add the test
     add_test(${target} ${target})
@@ -452,7 +463,6 @@ function(sfml_export_targets)
 
     install(EXPORT SFMLConfigExport
             FILE ${targets_config_filename}
-            NAMESPACE SFML::
             DESTINATION ${config_package_location})
 
     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/SFMLConfig.cmake"

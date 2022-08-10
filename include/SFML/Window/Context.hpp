@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2021 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -29,8 +29,10 @@
 // Headers
 ////////////////////////////////////////////////////////////
 #include <SFML/Window/Export.hpp>
+
+#include <SFML/System/Vector2.hpp>
 #include <SFML/Window/GlResource.hpp>
-#include <SFML/Window/ContextSettings.hpp>
+
 #include <memory>
 
 
@@ -38,8 +40,10 @@ namespace sf
 {
 namespace priv
 {
-    class GlContext;
+class GlContext;
 }
+
+struct ContextSettings;
 
 using GlFunctionPointer = void (*)();
 
@@ -50,7 +54,6 @@ using GlFunctionPointer = void (*)();
 class SFML_WINDOW_API Context : GlResource
 {
 public:
-
     ////////////////////////////////////////////////////////////
     /// \brief Default constructor
     ///
@@ -155,10 +158,9 @@ public:
     /// \param height   Back buffer height
     ///
     ////////////////////////////////////////////////////////////
-    Context(const ContextSettings& settings, unsigned int width, unsigned int height);
+    Context(const ContextSettings& settings, const Vector2u& size);
 
 private:
-
     ////////////////////////////////////////////////////////////
     // Member data
     ////////////////////////////////////////////////////////////

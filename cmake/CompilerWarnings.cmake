@@ -2,8 +2,8 @@
 #
 # https://github.com/lefticus/cppbestpractices/blob/master/02-Use_the_Tools_Available.md
 
-# Helper function to enable compiler warnings for a specific set of files
-function(set_file_warnings)
+# Helper function to enable compiler warnings for a specific target
+function(set_target_warnings target)
     option(WARNINGS_AS_ERRORS "Treat compiler warnings as errors" TRUE)
 
     set(MSVC_WARNINGS
@@ -27,7 +27,7 @@ function(set_file_warnings)
         /w14905 # wide string literal cast to 'LPSTR'
         /w14906 # string literal cast to 'LPWSTR'
         /w14928 # illegal copy-initialization; more than one user-defined conversion has been implicitly applied
-        # /permissive- # standards conformance mode for MSVC compiler. Disabled until all out-of-the-box Windows SDKs can successfully build with it.
+        /permissive- # standards conformance mode
 
         # Disables, remove when appropriate
         /wd4996 # disable warnings about deprecated functions
@@ -106,7 +106,5 @@ function(set_file_warnings)
         message(AUTHOR_WARNING "No compiler warnings set for '${CMAKE_CXX_COMPILER_ID}' compiler.")
     endif()
 
-    foreach(WARNING ${FILE_WARNINGS})
-        set_property(SOURCE ${ARGV} APPEND_STRING PROPERTY COMPILE_FLAGS " ${WARNING}")
-    endforeach()
+    target_compile_options(${target} PRIVATE ${FILE_WARNINGS})
 endfunction()

@@ -29,6 +29,7 @@
 // Headers
 ////////////////////////////////////////////////////////////
 #include <SFML/Window/GlContext.hpp>
+
 #include <glad/wgl.h>
 
 
@@ -43,7 +44,6 @@ namespace priv
 class WglContext : public GlContext
 {
 public:
-
     ////////////////////////////////////////////////////////////
     /// \brief Create a new default context
     ///
@@ -68,11 +68,10 @@ public:
     ///
     /// \param shared   Context to share the new one with
     /// \param settings Creation parameters
-    /// \param width    Back buffer width, in pixels
-    /// \param height   Back buffer height, in pixels
+    /// \param size     Back buffer width and height, in pixels
     ///
     ////////////////////////////////////////////////////////////
-    WglContext(WglContext* shared, const ContextSettings& settings, unsigned int width, unsigned int height);
+    WglContext(WglContext* shared, const ContextSettings& settings, const Vector2u& size);
 
     ////////////////////////////////////////////////////////////
     /// \brief Destructor
@@ -130,10 +129,12 @@ public:
     /// \return The best pixel format
     ///
     ////////////////////////////////////////////////////////////
-    static int selectBestPixelFormat(HDC deviceContext, unsigned int bitsPerPixel, const ContextSettings& settings, bool pbuffer = false);
+    static int selectBestPixelFormat(HDC                    deviceContext,
+                                     unsigned int           bitsPerPixel,
+                                     const ContextSettings& settings,
+                                     bool                   pbuffer = false);
 
 private:
-
     ////////////////////////////////////////////////////////////
     /// \brief Set the pixel format of the device context
     ///
@@ -152,12 +153,11 @@ private:
     /// \brief Create the context's drawing surface
     ///
     /// \param shared       Shared context (can be a null pointer)
-    /// \param width        Back buffer width, in pixels
-    /// \param height       Back buffer height, in pixels
+    /// \param size         Back buffer width and height, in pixels
     /// \param bitsPerPixel Pixel depth, in bits per pixel
     ///
     ////////////////////////////////////////////////////////////
-    void createSurface(WglContext* shared, unsigned int width, unsigned int height, unsigned int bitsPerPixel);
+    void createSurface(WglContext* shared, const Vector2u& size, unsigned int bitsPerPixel);
 
     ////////////////////////////////////////////////////////////
     /// \brief Create the context's drawing surface from an existing window

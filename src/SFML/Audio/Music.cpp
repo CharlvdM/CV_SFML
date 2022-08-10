@@ -25,29 +25,25 @@
 ////////////////////////////////////////////////////////////
 // Headers
 ////////////////////////////////////////////////////////////
-#include <SFML/Audio/Music.hpp>
 #include <SFML/Audio/ALCheck.hpp>
+#include <SFML/Audio/Music.hpp>
 #include <SFML/System/Err.hpp>
-#include <fstream>
+#include <SFML/System/Time.hpp>
+
 #include <algorithm>
+#include <fstream>
 #include <mutex>
+#include <ostream>
 
 #if defined(__APPLE__)
-    #if defined(__clang__)
-        #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-    #elif defined(__GNUC__)
-        #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    #endif
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #endif
 
 namespace sf
 {
 ////////////////////////////////////////////////////////////
-Music::Music() :
-m_file      (),
-m_loopSpan  (0, 0)
+Music::Music() : m_file(), m_loopSpan(0, 0)
 {
-
 }
 
 
@@ -60,7 +56,7 @@ Music::~Music()
 
 
 ////////////////////////////////////////////////////////////
-bool Music::openFromFile(const std::string& filename)
+bool Music::openFromFile(const std::filesystem::path& filename)
 {
     // First stop the music if it was already running
     stop();
@@ -165,7 +161,7 @@ void Music::setLoopPoints(TimeSpan timePoints)
 
     // Get old playing status and position
     Status oldStatus = getStatus();
-    Time oldPos = getPlayingOffset();
+    Time   oldPos    = getPlayingOffset();
 
     // Unload
     stop();
@@ -188,9 +184,9 @@ bool Music::onGetData(SoundStream::Chunk& data)
 {
     std::scoped_lock lock(m_mutex);
 
-    std::size_t toFill = m_samples.size();
-    Uint64 currentOffset = m_file.getSampleOffset();
-    Uint64 loopEnd = m_loopSpan.offset + m_loopSpan.length;
+    std::size_t toFill        = m_samples.size();
+    Uint64      currentOffset = m_file.getSampleOffset();
+    Uint64      loopEnd       = m_loopSpan.offset + m_loopSpan.length;
 
     // If the loop end is enabled and imminent, request less data.
     // This will trip an "onLoop()" call from the underlying SoundStream,
@@ -199,12 +195,13 @@ bool Music::onGetData(SoundStream::Chunk& data)
         toFill = static_cast<std::size_t>(loopEnd - currentOffset);
 
     // Fill the chunk parameters
-    data.samples = m_samples.data();
+    data.samples     = m_samples.data();
     data.sampleCount = static_cast<std::size_t>(m_file.read(m_samples.data(), toFill));
     currentOffset += data.sampleCount;
 
     // Check if we have stopped obtaining samples or reached either the EOF or the loop end point
-    return (data.sampleCount != 0) && (currentOffset < m_file.getSampleCount()) && !(currentOffset == loopEnd && m_loopSpan.length != 0);
+    return (data.sampleCount != 0) && (currentOffset < m_file.getSampleCount()) &&
+           !(currentOffset == loopEnd && m_loopSpan.length != 0);
 }
 
 
@@ -221,7 +218,7 @@ Int64 Music::onLoop()
 {
     // Called by underlying SoundStream so we can determine where to loop.
     std::scoped_lock lock(m_mutex);
-    Uint64 currentOffset = m_file.getSampleOffset();
+    Uint64           currentOffset = m_file.getSampleOffset();
     if (getLoop() && (m_loopSpan.length != 0) && (currentOffset == m_loopSpan.offset + m_loopSpan.length))
     {
         // Looping is enabled, and either we're at the loop end, or we're at the EOF
@@ -247,7 +244,7 @@ void Music::initialize()
     m_loopSpan.length = m_file.getSampleCount();
 
     // Resize the internal buffer so that it can contain 1 second of audio samples
-    m_samples.resize(m_file.getSampleRate() * m_file.getChannelCount());
+    m_samples.resize(static_cast<std::size_t>(m_file.getSampleRate()) * static_cast<std::size_t>(m_file.getChannelCount()));
 
     // Initialize the stream
     SoundStream::initialize(m_file.getChannelCount(), m_file.getSampleRate());
