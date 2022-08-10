@@ -22,6 +22,12 @@
 //
 ////////////////////////////////////////////////////////////
 
+// Disable the GCC warnings
+#if defined(__GNUG__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
+
 namespace priv
 {
 constexpr float pi = 3.141592654f;
