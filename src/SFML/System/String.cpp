@@ -27,8 +27,9 @@
 ////////////////////////////////////////////////////////////
 #include <SFML/System/String.hpp>
 #include <SFML/System/Utf.hpp>
-#include <iterator>
+
 #include <cstring>
+#include <iterator>
 
 
 namespace sf
@@ -119,17 +120,23 @@ String::String(const Uint32* utf32String)
 
 
 ////////////////////////////////////////////////////////////
-String::String(const std::basic_string<Uint32>& utf32String) :
-m_string(utf32String)
+String::String(const std::basic_string<Uint32>& utf32String) : m_string(utf32String)
 {
 }
 
 
 ////////////////////////////////////////////////////////////
-String::String(const String& copy) :
-m_string(copy.m_string)
+String::String(const String& copy) : m_string(copy.m_string)
 {
 }
+
+
+////////////////////////////////////////////////////////////
+String::String(String&&) noexcept = default;
+
+
+////////////////////////////////////////////////////////////
+String& String::operator=(String&&) noexcept = default;
 
 
 ////////////////////////////////////////////////////////////
@@ -210,7 +217,7 @@ std::basic_string<Uint32> String::toUtf32() const
 
 
 ////////////////////////////////////////////////////////////
-String& String::operator =(const String& right)
+String& String::operator=(const String& right)
 {
     m_string = right.m_string;
     return *this;
@@ -218,7 +225,7 @@ String& String::operator =(const String& right)
 
 
 ////////////////////////////////////////////////////////////
-String& String::operator +=(const String& right)
+String& String::operator+=(const String& right)
 {
     m_string += right.m_string;
     return *this;
@@ -226,14 +233,14 @@ String& String::operator +=(const String& right)
 
 
 ////////////////////////////////////////////////////////////
-Uint32 String::operator [](std::size_t index) const
+Uint32 String::operator[](std::size_t index) const
 {
     return m_string[index];
 }
 
 
 ////////////////////////////////////////////////////////////
-Uint32& String::operator [](std::size_t index)
+Uint32& String::operator[](std::size_t index)
 {
     return m_string[index];
 }
@@ -292,8 +299,8 @@ void String::replace(std::size_t position, std::size_t length, const String& rep
 void String::replace(const String& searchFor, const String& replaceWith)
 {
     std::size_t step = replaceWith.getSize();
-    std::size_t len = searchFor.getSize();
-    std::size_t pos = find(searchFor);
+    std::size_t len  = searchFor.getSize();
+    std::size_t pos  = find(searchFor);
 
     // Replace each occurrence of search
     while (pos != InvalidPos)
@@ -347,49 +354,49 @@ String::ConstIterator String::end() const
 
 
 ////////////////////////////////////////////////////////////
-bool operator ==(const String& left, const String& right)
+bool operator==(const String& left, const String& right)
 {
     return left.m_string == right.m_string;
 }
 
 
 ////////////////////////////////////////////////////////////
-bool operator !=(const String& left, const String& right)
+bool operator!=(const String& left, const String& right)
 {
     return !(left == right);
 }
 
 
 ////////////////////////////////////////////////////////////
-bool operator <(const String& left, const String& right)
+bool operator<(const String& left, const String& right)
 {
     return left.m_string < right.m_string;
 }
 
 
 ////////////////////////////////////////////////////////////
-bool operator >(const String& left, const String& right)
+bool operator>(const String& left, const String& right)
 {
     return right < left;
 }
 
 
 ////////////////////////////////////////////////////////////
-bool operator <=(const String& left, const String& right)
+bool operator<=(const String& left, const String& right)
 {
     return !(right < left);
 }
 
 
 ////////////////////////////////////////////////////////////
-bool operator >=(const String& left, const String& right)
+bool operator>=(const String& left, const String& right)
 {
     return !(left < right);
 }
 
 
 ////////////////////////////////////////////////////////////
-String operator +(const String& left, const String& right)
+String operator+(const String& left, const String& right)
 {
     String string = left;
     string += right;

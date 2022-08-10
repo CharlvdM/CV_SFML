@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2021 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -29,6 +29,7 @@
 // Headers
 ////////////////////////////////////////////////////////////
 #include <SFML/Audio/Export.hpp>
+
 #include <SFML/System/Vector3.hpp>
 
 
@@ -42,7 +43,6 @@ namespace sf
 class SFML_AUDIO_API Listener
 {
 public:
-
     ////////////////////////////////////////////////////////////
     /// \brief Change the global volume of all the sounds and musics
     ///

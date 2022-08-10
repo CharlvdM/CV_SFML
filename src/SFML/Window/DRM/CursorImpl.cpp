@@ -25,14 +25,61 @@
 ////////////////////////////////////////////////////////////
 // Headers
 ////////////////////////////////////////////////////////////
-#include <SFML/System/Time.hpp>
+#include <SFML/Window/DRM/CursorImpl.hpp>
+
+#include <vector>
 
 
 namespace sf
 {
+namespace priv
+{
 ////////////////////////////////////////////////////////////
-// Static member data
+CursorImpl::CursorImpl()
+{
+}
+
+
 ////////////////////////////////////////////////////////////
-const Time Time::Zero;
+bool CursorImpl::loadFromPixels(const Uint8* /*pixels*/, Vector2u /*size*/, Vector2u /*hotspot*/)
+{
+    return false;
+}
+
+
+////////////////////////////////////////////////////////////
+bool CursorImpl::loadFromPixelsARGB(const Uint8* /*pixels*/, Vector2u /*size*/, Vector2u /*hotspot*/)
+{
+    return false;
+}
+
+
+////////////////////////////////////////////////////////////
+bool CursorImpl::loadFromPixelsMonochrome(const Uint8* /*pixels*/, Vector2u /*size*/, Vector2u /*hotspot*/)
+{
+    return false;
+}
+
+
+////////////////////////////////////////////////////////////
+bool CursorImpl::loadFromSystem(Cursor::Type /*type*/)
+{
+    return false;
+}
+
+
+////////////////////////////////////////////////////////////
+bool CursorImpl::isColorCursorSupported()
+{
+    return false;
+}
+
+
+////////////////////////////////////////////////////////////
+void CursorImpl::release()
+{
+}
+
+} // namespace priv
 
 } // namespace sf

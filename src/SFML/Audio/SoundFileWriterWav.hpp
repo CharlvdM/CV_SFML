@@ -29,6 +29,7 @@
 // Headers
 ////////////////////////////////////////////////////////////
 #include <SFML/Audio/SoundFileWriter.hpp>
+
 #include <fstream>
 #include <string>
 
@@ -44,7 +45,6 @@ namespace priv
 class SoundFileWriterWav : public SoundFileWriter
 {
 public:
-
     ////////////////////////////////////////////////////////////
     /// \brief Check if this writer can handle a file on disk
     ///
@@ -53,10 +53,9 @@ public:
     /// \return True if the file can be written by this writer
     ///
     ////////////////////////////////////////////////////////////
-    static bool check(const std::string& filename);
+    [[nodiscard]] static bool check(const std::filesystem::path& filename);
 
 public:
-
     ////////////////////////////////////////////////////////////
     /// \brief Default constructor
     ///
@@ -79,7 +78,7 @@ public:
     /// \return True if the file was successfully opened
     ///
     ////////////////////////////////////////////////////////////
-    bool open(const std::string& filename, unsigned int sampleRate, unsigned int channelCount) override;
+    [[nodiscard]] bool open(const std::filesystem::path& filename, unsigned int sampleRate, unsigned int channelCount) override;
 
     ////////////////////////////////////////////////////////////
     /// \brief Write audio samples to the open file
@@ -91,7 +90,6 @@ public:
     void write(const Int16* samples, Uint64 count) override;
 
 private:
-
     ////////////////////////////////////////////////////////////
     /// \brief Write the header of the open file
     ///
@@ -101,7 +99,7 @@ private:
     /// \return True on success, false on error
     ///
     ////////////////////////////////////////////////////////////
-    bool writeHeader(unsigned int sampleRate, unsigned int channelCount);
+    [[nodiscard]] bool writeHeader(unsigned int sampleRate, unsigned int channelCount);
 
     ////////////////////////////////////////////////////////////
     /// \brief Close the file
@@ -112,7 +110,7 @@ private:
     ////////////////////////////////////////////////////////////
     // Member data
     ////////////////////////////////////////////////////////////
-    std::ofstream m_file;         //!< File stream to write to
+    std::ofstream m_file; //!< File stream to write to
 };
 
 } // namespace priv

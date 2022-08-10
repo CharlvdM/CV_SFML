@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2021 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -29,13 +29,15 @@
 // Headers
 ////////////////////////////////////////////////////////////
 #include <SFML/Audio/Export.hpp>
+
 #include <SFML/Audio/SoundSource.hpp>
-#include <SFML/System/Time.hpp>
+
 #include <cstdlib>
 
 
 namespace sf
 {
+class Time;
 class SoundBuffer;
 
 ////////////////////////////////////////////////////////////
@@ -45,7 +47,6 @@ class SoundBuffer;
 class SFML_AUDIO_API Sound : public SoundSource
 {
 public:
-
     ////////////////////////////////////////////////////////////
     /// \brief Default constructor
     ///
@@ -199,7 +200,7 @@ public:
     /// \return Reference to self
     ///
     ////////////////////////////////////////////////////////////
-    Sound& operator =(const Sound& right);
+    Sound& operator=(const Sound& right);
 
     ////////////////////////////////////////////////////////////
     /// \brief Reset the internal buffer of the sound
@@ -213,7 +214,6 @@ public:
     void resetBuffer();
 
 private:
-
     ////////////////////////////////////////////////////////////
     // Member data
     ////////////////////////////////////////////////////////////

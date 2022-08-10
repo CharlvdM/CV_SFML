@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2021 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -29,11 +29,14 @@
 // Headers
 ////////////////////////////////////////////////////////////
 #include <SFML/Audio/Export.hpp>
+
 #include <SFML/Audio/AlResource.hpp>
 #include <SFML/System/Time.hpp>
+
+#include <filesystem>
 #include <string>
-#include <vector>
 #include <unordered_set>
+#include <vector>
 
 
 namespace sf
@@ -49,7 +52,6 @@ class InputStream;
 class SFML_AUDIO_API SoundBuffer : AlResource
 {
 public:
-
     ////////////////////////////////////////////////////////////
     /// \brief Default constructor
     ///
@@ -83,7 +85,7 @@ public:
     /// \see loadFromMemory, loadFromStream, loadFromSamples, saveToFile
     ///
     ////////////////////////////////////////////////////////////
-    [[nodiscard]] bool loadFromFile(const std::string& filename);
+    [[nodiscard]] bool loadFromFile(const std::filesystem::path& filename);
 
     ////////////////////////////////////////////////////////////
     /// \brief Load the sound buffer from a file in memory
@@ -147,7 +149,7 @@ public:
     /// \see loadFromFile, loadFromMemory, loadFromSamples
     ///
     ////////////////////////////////////////////////////////////
-    [[nodiscard]] bool saveToFile(const std::string& filename) const;
+    [[nodiscard]] bool saveToFile(const std::filesystem::path& filename) const;
 
     ////////////////////////////////////////////////////////////
     /// \brief Get the array of audio samples stored in the buffer
@@ -221,10 +223,9 @@ public:
     /// \return Reference to self
     ///
     ////////////////////////////////////////////////////////////
-    SoundBuffer& operator =(const SoundBuffer& right);
+    SoundBuffer& operator=(const SoundBuffer& right);
 
 private:
-
     friend class Sound;
 
     ////////////////////////////////////////////////////////////
@@ -267,7 +268,7 @@ private:
     ////////////////////////////////////////////////////////////
     // Types
     ////////////////////////////////////////////////////////////
-    using SoundList = std::unordered_set<Sound *>; //!< Set of unique sound instances
+    using SoundList = std::unordered_set<Sound*>; //!< Set of unique sound instances
 
     ////////////////////////////////////////////////////////////
     // Member data

@@ -27,6 +27,7 @@
 ////////////////////////////////////////////////////////////
 #include <SFML/Window/VideoMode.hpp>
 #include <SFML/Window/VideoModeImpl.hpp>
+
 #include <algorithm>
 #include <functional>
 
@@ -34,22 +35,16 @@
 namespace sf
 {
 ////////////////////////////////////////////////////////////
-VideoMode::VideoMode() :
-width       (0),
-height      (0),
-bitsPerPixel(0)
+VideoMode::VideoMode() : size(0, 0), bitsPerPixel(0)
 {
-
 }
 
 
 ////////////////////////////////////////////////////////////
-VideoMode::VideoMode(unsigned int modeWidth, unsigned int modeHeight, unsigned int modeBitsPerPixel) :
-width       (modeWidth),
-height      (modeHeight),
+VideoMode::VideoMode(const Vector2u& modeSize, unsigned int modeBitsPerPixel) :
+size(modeSize),
 bitsPerPixel(modeBitsPerPixel)
 {
-
 }
 
 
@@ -87,33 +82,31 @@ bool VideoMode::isValid() const
 
 
 ////////////////////////////////////////////////////////////
-bool operator ==(const VideoMode& left, const VideoMode& right)
+bool operator==(const VideoMode& left, const VideoMode& right)
 {
-    return (left.width        == right.width)        &&
-           (left.height       == right.height)       &&
-           (left.bitsPerPixel == right.bitsPerPixel);
+    return (left.size == right.size) && (left.bitsPerPixel == right.bitsPerPixel);
 }
 
 
 ////////////////////////////////////////////////////////////
-bool operator !=(const VideoMode& left, const VideoMode& right)
+bool operator!=(const VideoMode& left, const VideoMode& right)
 {
     return !(left == right);
 }
 
 
 ////////////////////////////////////////////////////////////
-bool operator <(const VideoMode& left, const VideoMode& right)
+bool operator<(const VideoMode& left, const VideoMode& right)
 {
     if (left.bitsPerPixel == right.bitsPerPixel)
     {
-        if (left.width == right.width)
+        if (left.size.x == right.size.x)
         {
-            return left.height < right.height;
+            return left.size.y < right.size.y;
         }
         else
         {
-            return left.width < right.width;
+            return left.size.x < right.size.x;
         }
     }
     else
@@ -124,21 +117,21 @@ bool operator <(const VideoMode& left, const VideoMode& right)
 
 
 ////////////////////////////////////////////////////////////
-bool operator >(const VideoMode& left, const VideoMode& right)
+bool operator>(const VideoMode& left, const VideoMode& right)
 {
     return right < left;
 }
 
 
 ////////////////////////////////////////////////////////////
-bool operator <=(const VideoMode& left, const VideoMode& right)
+bool operator<=(const VideoMode& left, const VideoMode& right)
 {
     return !(right < left);
 }
 
 
 ////////////////////////////////////////////////////////////
-bool operator >=(const VideoMode& left, const VideoMode& right)
+bool operator>=(const VideoMode& left, const VideoMode& right)
 {
     return !(left < right);
 }

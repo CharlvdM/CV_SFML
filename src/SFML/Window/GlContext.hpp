@@ -29,9 +29,11 @@
 // Headers
 ////////////////////////////////////////////////////////////
 #include <SFML/Config.hpp>
+
 #include <SFML/Window/Context.hpp>
 #include <SFML/Window/ContextSettings.hpp>
 #include <SFML/Window/GlResource.hpp>
+
 #include <memory>
 
 
@@ -48,7 +50,6 @@ class WindowImpl;
 class GlContext
 {
 public:
-
     ////////////////////////////////////////////////////////////
     /// \brief Perform resource initialization
     ///
@@ -128,13 +129,12 @@ public:
     /// to use according to the OS.
     ///
     /// \param settings Creation parameters
-    /// \param width    Back buffer width
-    /// \param height   Back buffer height
+    /// \param size     Back buffer width and height
     ///
     /// \return Pointer to the created context
     ///
     ////////////////////////////////////////////////////////////
-    static std::unique_ptr<GlContext> create(const ContextSettings& settings, unsigned int width, unsigned int height);
+    static std::unique_ptr<GlContext> create(const ContextSettings& settings, const Vector2u& size);
 
 public:
     ////////////////////////////////////////////////////////////
@@ -242,7 +242,6 @@ public:
     virtual void setVerticalSyncEnabled(bool enabled) = 0;
 
 protected:
-
     ////////////////////////////////////////////////////////////
     /// \brief Default constructor
     ///
@@ -288,7 +287,14 @@ protected:
     /// \return Score of the configuration
     ///
     ////////////////////////////////////////////////////////////
-    static int evaluateFormat(unsigned int bitsPerPixel, const ContextSettings& settings, int colorBits, int depthBits, int stencilBits, int antialiasing, bool accelerated, bool sRgb);
+    static int evaluateFormat(unsigned int           bitsPerPixel,
+                              const ContextSettings& settings,
+                              int                    colorBits,
+                              int                    depthBits,
+                              int                    stencilBits,
+                              int                    antialiasing,
+                              bool                   accelerated,
+                              bool                   sRgb);
 
     ////////////////////////////////////////////////////////////
     // Member data
@@ -296,7 +302,6 @@ protected:
     ContextSettings m_settings; //!< Creation settings of the context
 
 private:
-
     ////////////////////////////////////////////////////////////
     /// \brief Perform various initializations after the context construction
     /// \param requestedSettings Requested settings during context creation

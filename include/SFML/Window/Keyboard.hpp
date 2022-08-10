@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2021 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -40,7 +40,6 @@ namespace sf
 class SFML_WINDOW_API Keyboard
 {
 public:
-
     ////////////////////////////////////////////////////////////
     /// \brief Key codes
     ///
@@ -48,7 +47,7 @@ public:
     enum Key
     {
         Unknown = -1, //!< Unhandled key
-        A = 0,        //!< The A key
+        A       = 0,  //!< The A key
         B,            //!< The B key
         C,            //!< The C key
         D,            //!< The D key
@@ -150,7 +149,7 @@ public:
         F15,          //!< The F15 key
         Pause,        //!< The Pause key
 
-        KeyCount      //!< Keep last -- the total number of keyboard keys
+        KeyCount //!< Keep last -- the total number of keyboard keys
     };
 
     ////////////////////////////////////////////////////////////

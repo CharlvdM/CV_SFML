@@ -1,10 +1,12 @@
 #include <SFML/System/Vector3.hpp>
-#include "SystemUtil.hpp"
+
+#include <doctest/doctest.h>
+
+#include <SystemUtil.hpp>
 #include <type_traits>
 
-#include <doctest.h>
-
-// Use sf::Vector3i for tests. Test coverage is given, as there are no template specializations.
+// Use sf::Vector3i for tests (except for float vector algebra).
+// Test coverage is given, as there are no template specializations.
 
 TEST_CASE("sf::Vector3 class template - [system]")
 {
@@ -95,7 +97,7 @@ TEST_CASE("sf::Vector3 class template - [system]")
     SUBCASE("Arithmetic operations between vector and scalar value")
     {
         sf::Vector3i vector(26, 12, 6);
-        int scalar = 2;
+        int          scalar = 2;
 
         SUBCASE("vector * scalar")
         {
@@ -197,6 +199,32 @@ TEST_CASE("sf::Vector3 class template - [system]")
             CHECK(x == 3);
             CHECK(vector.x == 3);
         }
+    }
+
+    SUBCASE("Length and normalization")
+    {
+        const sf::Vector3f v(2.4f, 3.0f, 5.2f);
+
+        CHECK(v.length() == Approx(6.46529f));
+        CHECK(v.lengthSq() == Approx(41.79997f));
+        CHECK(v.normalized() == Approx(sf::Vector3f(0.37121f, 0.46401f, 0.80429f)));
+    }
+
+    SUBCASE("Products and quotients")
+    {
+        const sf::Vector3f v(2.4f, 3.0f, 5.2f);
+        const sf::Vector3f w(-0.7f, -2.2f, -4.8f);
+
+        CHECK(v.dot(w) == Approx(-33.24f));
+        CHECK(w.dot(v) == Approx(-33.24f));
+
+        CHECK(v.cross(w) == Approx(sf::Vector3f(-2.96f, 7.88f, -3.18f)));
+        CHECK(w.cross(v) == Approx(sf::Vector3f(2.96f, -7.88f, 3.18f)));
+
+        CHECK(v.cwiseMul(w) == Approx(sf::Vector3f(-1.68f, -6.6f, -24.96f)));
+        CHECK(w.cwiseMul(v) == Approx(sf::Vector3f(-1.68f, -6.6f, -24.96f)));
+        CHECK(v.cwiseDiv(w) == Approx(sf::Vector3f(-3.428571f, -1.363636f, -1.0833333f)));
+        CHECK(w.cwiseDiv(v) == Approx(sf::Vector3f(-0.291666f, -0.733333f, -0.9230769f)));
     }
 
     SUBCASE("Constexpr support")

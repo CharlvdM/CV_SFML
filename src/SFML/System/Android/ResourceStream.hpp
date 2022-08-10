@@ -29,8 +29,12 @@
 // Headers
 ////////////////////////////////////////////////////////////
 #include <SFML/System/Export.hpp>
+
 #include <SFML/System/InputStream.hpp>
+
 #include <android/asset_manager.h>
+
+#include <filesystem>
 #include <string>
 
 
@@ -45,14 +49,13 @@ namespace priv
 class SFML_SYSTEM_API ResourceStream : public InputStream
 {
 public:
-
     ////////////////////////////////////////////////////////////
     /// \brief Default constructor
     ///
     /// \param filename Filename of the asset
     ///
     ////////////////////////////////////////////////////////////
-    ResourceStream(const std::string& filename);
+    ResourceStream(const std::filesystem::path& filename);
 
     ////////////////////////////////////////////////////////////
     /// \brief Destructor
@@ -69,7 +72,7 @@ public:
     /// \return The number of bytes actually read, or -1 on error
     ///
     ////////////////////////////////////////////////////////////
-    Int64 read(void *data, Int64 size);
+    Int64 read(void* data, Int64 size) override;
 
     ////////////////////////////////////////////////////////////
     /// \brief Change the current reading position in the asset file
@@ -79,7 +82,7 @@ public:
     /// \return The position actually sought to, or -1 on error
     ///
     ////////////////////////////////////////////////////////////
-    Int64 seek(Int64 position);
+    Int64 seek(Int64 position) override;
 
     ////////////////////////////////////////////////////////////
     /// \brief Get the current reading position in the asset file
@@ -87,7 +90,7 @@ public:
     /// \return The current position, or -1 on error.
     ///
     ////////////////////////////////////////////////////////////
-    Int64 tell();
+    Int64 tell() override;
 
     ////////////////////////////////////////////////////////////
     /// \brief Return the size of the asset file
@@ -95,10 +98,9 @@ public:
     /// \return The total number of bytes available in the asset, or -1 on error
     ///
     ////////////////////////////////////////////////////////////
-    Int64 getSize();
+    Int64 getSize() override;
 
 private:
-
     ////////////////////////////////////////////////////////////
     // Member data
     ////////////////////////////////////////////////////////////

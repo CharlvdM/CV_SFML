@@ -25,27 +25,26 @@
 ////////////////////////////////////////////////////////////
 // Headers
 ////////////////////////////////////////////////////////////
-#include <SFML/Window/Window.hpp>
-#include <SFML/Window/GlContext.hpp>
-#include <SFML/Window/WindowImpl.hpp>
-#include <SFML/System/Sleep.hpp>
 #include <SFML/System/Err.hpp>
+#include <SFML/System/Sleep.hpp>
+#include <SFML/Window/GlContext.hpp>
+#include <SFML/Window/Window.hpp>
+#include <SFML/Window/WindowImpl.hpp>
+
+#include <ostream>
 
 
 namespace sf
 {
 ////////////////////////////////////////////////////////////
-Window::Window() :
-m_context       (),
-m_frameTimeLimit(Time::Zero)
+Window::Window() : m_context(), m_frameTimeLimit(Time::Zero)
 {
-
 }
 
 
 ////////////////////////////////////////////////////////////
 Window::Window(VideoMode mode, const String& title, Uint32 style, const ContextSettings& settings) :
-m_context       (),
+m_context(),
 m_frameTimeLimit(Time::Zero)
 {
     Window::create(mode, title, style, settings);
@@ -53,9 +52,7 @@ m_frameTimeLimit(Time::Zero)
 
 
 ////////////////////////////////////////////////////////////
-Window::Window(WindowHandle handle, const ContextSettings& settings) :
-m_context       (),
-m_frameTimeLimit(Time::Zero)
+Window::Window(WindowHandle handle, const ContextSettings& settings) : m_context(), m_frameTimeLimit(Time::Zero)
 {
     Window::create(handle, settings);
 }
@@ -104,16 +101,16 @@ void Window::create(VideoMode mode, const String& title, Uint32 style, const Con
         }
     }
 
-    // Check validity of style according to the underlying platform
-    #if defined(SFML_SYSTEM_IOS) || defined(SFML_SYSTEM_ANDROID)
-        if (style & Style::Fullscreen)
-            style &= ~static_cast<Uint32>(Style::Titlebar);
-        else
-            style |= Style::Titlebar;
-    #else
-        if ((style & Style::Close) || (style & Style::Resize))
-            style |= Style::Titlebar;
-    #endif
+// Check validity of style according to the underlying platform
+#if defined(SFML_SYSTEM_IOS) || defined(SFML_SYSTEM_ANDROID)
+    if (style & Style::Fullscreen)
+        style &= ~static_cast<Uint32>(Style::Titlebar);
+    else
+        style |= Style::Titlebar;
+#else
+    if ((style & Style::Close) || (style & Style::Resize))
+        style |= Style::Titlebar;
+#endif
 
     // Recreate the window implementation
     m_impl = priv::WindowImpl::create(mode, title, style, settings);
@@ -164,7 +161,7 @@ void Window::close()
 ////////////////////////////////////////////////////////////
 const ContextSettings& Window::getSettings() const
 {
-    static const ContextSettings empty(0, 0, 0);
+    static constexpr ContextSettings empty(0, 0, 0);
 
     return m_context ? m_context->getSettings() : empty;
 }

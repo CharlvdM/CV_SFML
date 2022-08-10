@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2020 Andrew Mickelson
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -25,22 +25,48 @@
 ////////////////////////////////////////////////////////////
 // Headers
 ////////////////////////////////////////////////////////////
-#include <SFML/Graphics/Color.hpp>
+#include <SFML/System/Err.hpp>
+#include <SFML/Window/DRM/DRMContext.hpp>
+#include <SFML/Window/VideoModeImpl.hpp>
+
+#include <drm-common.h>
 
 
 namespace sf
 {
+namespace priv
+{
 ////////////////////////////////////////////////////////////
-// Static member data
+std::vector<VideoMode> VideoModeImpl::getFullscreenModes()
+{
+    std::vector<VideoMode> modes;
+
+    drm*                drm  = sf::priv::DRMContext::getDRM();
+    drmModeConnectorPtr conn = drm->saved_connector;
+
+    if (conn)
+    {
+        for (int i = 0; i < conn->count_modes; i++)
+            modes.push_back(VideoMode({conn->modes[i].hdisplay, conn->modes[i].vdisplay}));
+    }
+    else
+        modes.push_back(getDesktopMode());
+
+    return modes;
+}
+
+
 ////////////////////////////////////////////////////////////
-const Color Color::Black(0, 0, 0);
-const Color Color::White(255, 255, 255);
-const Color Color::Red(255, 0, 0);
-const Color Color::Green(0, 255, 0);
-const Color Color::Blue(0, 0, 255);
-const Color Color::Yellow(255, 255, 0);
-const Color Color::Magenta(255, 0, 255);
-const Color Color::Cyan(0, 255, 255);
-const Color Color::Transparent(0, 0, 0, 0);
+VideoMode VideoModeImpl::getDesktopMode()
+{
+    drm*               drm = sf::priv::DRMContext::getDRM();
+    drmModeModeInfoPtr ptr = drm->mode;
+    if (ptr)
+        return VideoMode({ptr->hdisplay, ptr->vdisplay});
+    else
+        return VideoMode({0, 0});
+}
+
+} // namespace priv
 
 } // namespace sf

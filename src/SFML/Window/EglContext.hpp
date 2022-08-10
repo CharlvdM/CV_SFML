@@ -28,14 +28,15 @@
 ////////////////////////////////////////////////////////////
 // Headers
 ////////////////////////////////////////////////////////////
-#include <SFML/Window/VideoMode.hpp>
 #include <SFML/Window/ContextSettings.hpp>
 #include <SFML/Window/EGLCheck.hpp>
 #include <SFML/Window/GlContext.hpp>
+#include <SFML/Window/VideoMode.hpp>
 #include <SFML/Window/WindowStyle.hpp> // Prevent conflict with macro None from Xlib
+
 #include <glad/egl.h>
-#ifdef SFML_SYSTEM_LINUX
-    #include <X11/Xlib.h>
+#if defined(SFML_SYSTEM_LINUX) && !defined(SFML_USE_DRM)
+#include <X11/Xlib.h>
 #endif
 
 namespace sf
@@ -45,7 +46,6 @@ namespace priv
 class EglContext : public GlContext
 {
 public:
-
     ////////////////////////////////////////////////////////////
     /// \brief Create a new context, not associated to a window
     ///
@@ -71,11 +71,10 @@ public:
     ///
     /// \param shared   Context to share the new one with
     /// \param settings Creation parameters
-    /// \param width    Back buffer width, in pixels
-    /// \param height   Back buffer height, in pixels
+    /// \param size     Back buffer width and height, in pixels
     ///
     ////////////////////////////////////////////////////////////
-    EglContext(EglContext* shared, const ContextSettings& settings, unsigned int width, unsigned int height);
+    EglContext(EglContext* shared, const ContextSettings& settings, const Vector2u& size);
 
     ////////////////////////////////////////////////////////////
     /// \brief Destructor
@@ -165,7 +164,7 @@ public:
     ////////////////////////////////////////////////////////////
     static EGLConfig getBestConfig(EGLDisplay display, unsigned int bitsPerPixel, const ContextSettings& settings);
 
-#ifdef SFML_SYSTEM_LINUX
+#if defined(SFML_SYSTEM_LINUX) && !defined(SFML_USE_DRM)
     ////////////////////////////////////////////////////////////
     /// \brief Select the best EGL visual for a given set of settings
     ///
@@ -180,7 +179,6 @@ public:
 #endif
 
 private:
-
     ////////////////////////////////////////////////////////////
     /// \brief Helper to copy the picked EGL configuration
     ////////////////////////////////////////////////////////////
@@ -189,11 +187,10 @@ private:
     ////////////////////////////////////////////////////////////
     // Member data
     ////////////////////////////////////////////////////////////
-    EGLDisplay  m_display; //!< The internal EGL display
-    EGLContext  m_context; //!< The internal EGL context
-    EGLSurface  m_surface; //!< The internal EGL surface
-    EGLConfig   m_config;  //!< The internal EGL config
-
+    EGLDisplay m_display; //!< The internal EGL display
+    EGLContext m_context; //!< The internal EGL context
+    EGLSurface m_surface; //!< The internal EGL surface
+    EGLConfig  m_config;  //!< The internal EGL config
 };
 
 } // namespace priv

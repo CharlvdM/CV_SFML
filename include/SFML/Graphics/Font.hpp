@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2021 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -29,9 +29,11 @@
 // Headers
 ////////////////////////////////////////////////////////////
 #include <SFML/Graphics/Export.hpp>
+
 #include <SFML/Graphics/Glyph.hpp>
-#include <SFML/Graphics/Texture.hpp>
 #include <SFML/Graphics/Rect.hpp>
+#include <SFML/Graphics/Texture.hpp>
+
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -56,7 +58,6 @@ class InputStream;
 class SFML_GRAPHICS_API Font
 {
 public:
-
     ////////////////////////////////////////////////////////////
     /// \brief Holds various information about a font
     ///
@@ -67,7 +68,6 @@ public:
     };
 
 public:
-
     ////////////////////////////////////////////////////////////
     /// \brief Default constructor
     ///
@@ -83,6 +83,18 @@ public:
     ///
     ////////////////////////////////////////////////////////////
     Font(const Font& copy);
+
+    ////////////////////////////////////////////////////////////
+    /// \brief Move constructor
+    ///
+    ////////////////////////////////////////////////////////////
+    Font(Font&&) noexcept;
+
+    ////////////////////////////////////////////////////////////
+    /// \brief Move assignment
+    ///
+    ////////////////////////////////////////////////////////////
+    Font& operator=(Font&&) noexcept;
 
     ////////////////////////////////////////////////////////////
     /// \brief Destructor
@@ -112,7 +124,7 @@ public:
     /// \see loadFromMemory, loadFromStream
     ///
     ////////////////////////////////////////////////////////////
-    [[nodiscard]] bool loadFromFile(const std::string& filename);
+    [[nodiscard]] bool loadFromFile(const std::filesystem::path& filename);
 
     ////////////////////////////////////////////////////////////
     /// \brief Load the font from a file in memory
@@ -315,17 +327,18 @@ public:
     /// \return Reference to self
     ///
     ////////////////////////////////////////////////////////////
-    Font& operator =(const Font& right);
+    Font& operator=(const Font& right);
 
 private:
-
     ////////////////////////////////////////////////////////////
     /// \brief Structure defining a row of glyphs
     ///
     ////////////////////////////////////////////////////////////
     struct Row
     {
-        Row(unsigned int rowTop, unsigned int rowHeight) : width(0), top(rowTop), height(rowHeight) {}
+        Row(unsigned int rowTop, unsigned int rowHeight) : width(0), top(rowTop), height(rowHeight)
+        {
+        }
 
         unsigned int width;  //!< Current width of the row
         unsigned int top;    //!< Y position of the row into the texture
@@ -343,7 +356,7 @@ private:
     ////////////////////////////////////////////////////////////
     struct Page
     {
-        Page();
+        explicit Page(bool smooth);
 
         GlyphTable       glyphs;  //!< Table mapping code points to their corresponding glyph
         Texture          texture; //!< Texture containing the pixels of the glyphs
@@ -356,6 +369,16 @@ private:
     ///
     ////////////////////////////////////////////////////////////
     void cleanup();
+
+    ////////////////////////////////////////////////////////////
+    /// \brief Find or create the glyphs page corresponding to the given character size
+    ///
+    /// \param characterSize Reference character size
+    ///
+    /// \return The glyphs page corresponding to \a characterSize
+    ///
+    ////////////////////////////////////////////////////////////
+    Page& loadPage(unsigned int characterSize) const;
 
     ////////////////////////////////////////////////////////////
     /// \brief Load a new glyph and store it in the cache
@@ -373,14 +396,13 @@ private:
     ////////////////////////////////////////////////////////////
     /// \brief Find a suitable rectangle within the texture for a glyph
     ///
-    /// \param page   Page of glyphs to search in
-    /// \param width  Width of the rectangle
-    /// \param height Height of the rectangle
+    /// \param page Page of glyphs to search in
+    /// \param size Width and height of the rectangle
     ///
     /// \return Found rectangle within the texture
     ///
     ////////////////////////////////////////////////////////////
-    IntRect findGlyphRect(Page& page, unsigned int width, unsigned int height) const;
+    IntRect findGlyphRect(Page& page, const Vector2u& size) const;
 
     ////////////////////////////////////////////////////////////
     /// \brief Make sure that the given size is the current one
@@ -401,14 +423,14 @@ private:
     ////////////////////////////////////////////////////////////
     // Member data
     ////////////////////////////////////////////////////////////
-    std::shared_ptr<FontHandles>          m_fontHandles; //!< Shared information about the internal font instance
-    bool                                  m_isSmooth;    //!< Status of the smooth filter
-    Info                                  m_info;        //!< Information about the font
-    mutable PageTable                     m_pages;       //!< Table containing the glyphs pages by character size
-    mutable std::vector<Uint8>            m_pixelBuffer; //!< Pixel buffer holding a glyph's pixels before being written to the texture
-    #ifdef SFML_SYSTEM_ANDROID
-    std::unique_ptr<priv::ResourceStream> m_stream;      //!< Asset file streamer (if loaded from file)
-    #endif
+    std::shared_ptr<FontHandles> m_fontHandles; //!< Shared information about the internal font instance
+    bool                         m_isSmooth;    //!< Status of the smooth filter
+    Info                         m_info;        //!< Information about the font
+    mutable PageTable            m_pages;       //!< Table containing the glyphs pages by character size
+    mutable std::vector<Uint8> m_pixelBuffer; //!< Pixel buffer holding a glyph's pixels before being written to the texture
+#ifdef SFML_SYSTEM_ANDROID
+    std::unique_ptr<priv::ResourceStream> m_stream; //!< Asset file streamer (if loaded from file)
+#endif
 };
 
 } // namespace sf

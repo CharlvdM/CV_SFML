@@ -25,97 +25,101 @@
 ////////////////////////////////////////////////////////////
 // Headers
 ////////////////////////////////////////////////////////////
-#include <SFML/Window/Win32/WindowImplWin32.hpp>
-#include <SFML/Window/WindowStyle.hpp>
-#include <SFML/Window/JoystickImpl.hpp>
 #include <SFML/System/Err.hpp>
 #include <SFML/System/String.hpp>
 #include <SFML/System/Utf.hpp>
+#include <SFML/Window/JoystickImpl.hpp>
+#include <SFML/Window/Win32/WindowImplWin32.hpp>
+#include <SFML/Window/WindowStyle.hpp>
+
+#include <cstring>
 // dbt.h is lowercase here, as a cross-compile on linux with mingw-w64
 // expects lowercase, and a native compile on windows, whether via msvc
 // or mingw-w64 addresses files in a case insensitive manner.
 #include <dbt.h>
+#include <ostream>
 #include <vector>
-#include <cstring>
 
 // MinGW lacks the definition of some Win32 constants
 #ifndef XBUTTON1
-    #define XBUTTON1 0x0001
+#define XBUTTON1 0x0001
 #endif
 #ifndef XBUTTON2
-    #define XBUTTON2 0x0002
+#define XBUTTON2 0x0002
 #endif
 #ifndef WM_MOUSEHWHEEL
-    #define WM_MOUSEHWHEEL 0x020E
+#define WM_MOUSEHWHEEL 0x020E
 #endif
 #ifndef MAPVK_VK_TO_VSC
-    #define MAPVK_VK_TO_VSC (0)
+#define MAPVK_VK_TO_VSC (0)
 #endif
 
 namespace
 {
-    unsigned int               windowCount      = 0; // Windows owned by SFML
-    unsigned int               handleCount      = 0; // All window handles
-    const wchar_t*             className        = L"SFML_Window";
-    sf::priv::WindowImplWin32* fullscreenWindow = nullptr;
+unsigned int               windowCount      = 0; // Windows owned by SFML
+unsigned int               handleCount      = 0; // All window handles
+const wchar_t*             className        = L"SFML_Window";
+sf::priv::WindowImplWin32* fullscreenWindow = nullptr;
 
-    const GUID GUID_DEVINTERFACE_HID = {0x4d1e55b2, 0xf16f, 0x11cf, {0x88, 0xcb, 0x00, 0x11, 0x11, 0x00, 0x00, 0x30}};
+const GUID GUID_DEVINTERFACE_HID = {0x4d1e55b2, 0xf16f, 0x11cf, {0x88, 0xcb, 0x00, 0x11, 0x11, 0x00, 0x00, 0x30}};
 
-    void setProcessDpiAware()
+void setProcessDpiAware()
+{
+    // Try SetProcessDpiAwareness first
+    HINSTANCE shCoreDll = LoadLibrary(L"Shcore.dll");
+
+    if (shCoreDll)
     {
-        // Try SetProcessDpiAwareness first
-        HINSTANCE shCoreDll = LoadLibrary(L"Shcore.dll");
-
-        if (shCoreDll)
+        enum ProcessDpiAwareness
         {
-            enum ProcessDpiAwareness
-            {
-                ProcessDpiUnaware         = 0,
-                ProcessSystemDpiAware     = 1,
-                ProcessPerMonitorDpiAware = 2
-            };
+            ProcessDpiUnaware         = 0,
+            ProcessSystemDpiAware     = 1,
+            ProcessPerMonitorDpiAware = 2
+        };
 
-            using SetProcessDpiAwarenessFuncType = HRESULT (WINAPI *)(ProcessDpiAwareness);
-            auto SetProcessDpiAwarenessFunc = reinterpret_cast<SetProcessDpiAwarenessFuncType>(reinterpret_cast<void*>(GetProcAddress(shCoreDll, "SetProcessDpiAwareness")));
+        using SetProcessDpiAwarenessFuncType = HRESULT(WINAPI*)(ProcessDpiAwareness);
+        auto SetProcessDpiAwarenessFunc      = reinterpret_cast<SetProcessDpiAwarenessFuncType>(
+            reinterpret_cast<void*>(GetProcAddress(shCoreDll, "SetProcessDpiAwareness")));
 
-            if (SetProcessDpiAwarenessFunc)
+        if (SetProcessDpiAwarenessFunc)
+        {
+            // We only check for E_INVALIDARG because we would get
+            // E_ACCESSDENIED if the DPI was already set previously
+            // and S_OK means the call was successful
+            if (SetProcessDpiAwarenessFunc(ProcessSystemDpiAware) == E_INVALIDARG)
             {
-                // We only check for E_INVALIDARG because we would get
-                // E_ACCESSDENIED if the DPI was already set previously
-                // and S_OK means the call was successful
-                if (SetProcessDpiAwarenessFunc(ProcessSystemDpiAware) == E_INVALIDARG)
-                {
-                    sf::err() << "Failed to set process DPI awareness" << std::endl;
-                }
-                else
-                {
-                    FreeLibrary(shCoreDll);
-                    return;
-                }
+                sf::err() << "Failed to set process DPI awareness" << std::endl;
             }
-
-            FreeLibrary(shCoreDll);
+            else
+            {
+                FreeLibrary(shCoreDll);
+                return;
+            }
         }
 
-        // Fall back to SetProcessDPIAware if SetProcessDpiAwareness
-        // is not available on this system
-        HINSTANCE user32Dll = LoadLibrary(L"user32.dll");
+        FreeLibrary(shCoreDll);
+    }
 
-        if (user32Dll)
+    // Fall back to SetProcessDPIAware if SetProcessDpiAwareness
+    // is not available on this system
+    HINSTANCE user32Dll = LoadLibrary(L"user32.dll");
+
+    if (user32Dll)
+    {
+        using SetProcessDPIAwareFuncType = BOOL(WINAPI*)();
+        auto SetProcessDPIAwareFunc      = reinterpret_cast<SetProcessDPIAwareFuncType>(
+            reinterpret_cast<void*>(GetProcAddress(user32Dll, "SetProcessDPIAware")));
+
+        if (SetProcessDPIAwareFunc)
         {
-            using SetProcessDPIAwareFuncType = BOOL (WINAPI *)();
-            auto SetProcessDPIAwareFunc = reinterpret_cast<SetProcessDPIAwareFuncType>(reinterpret_cast<void*>(GetProcAddress(user32Dll, "SetProcessDPIAware")));
-
-            if (SetProcessDPIAwareFunc)
-            {
-                if (!SetProcessDPIAwareFunc())
-                    sf::err() << "Failed to set process DPI awareness" << std::endl;
-            }
-
-            FreeLibrary(user32Dll);
+            if (!SetProcessDPIAwareFunc())
+                sf::err() << "Failed to set process DPI awareness" << std::endl;
         }
+
+        FreeLibrary(user32Dll);
     }
 }
+} // namespace
 
 namespace sf
 {
@@ -123,18 +127,18 @@ namespace priv
 {
 ////////////////////////////////////////////////////////////
 WindowImplWin32::WindowImplWin32(WindowHandle handle) :
-m_handle          (handle),
-m_callback        (0),
-m_cursorVisible   (true), // might need to call GetCursorInfo
-m_lastCursor      (LoadCursor(nullptr, IDC_ARROW)),
-m_icon            (nullptr),
+m_handle(handle),
+m_callback(0),
+m_cursorVisible(true), // might need to call GetCursorInfo
+m_lastCursor(LoadCursor(nullptr, IDC_ARROW)),
+m_icon(nullptr),
 m_keyRepeatEnabled(true),
-m_lastSize        (0, 0),
-m_resizing        (false),
-m_surrogate       (0),
-m_mouseInside     (false),
-m_fullscreen      (false),
-m_cursorGrabbed   (false)
+m_lastSize(0, 0),
+m_resizing(false),
+m_surrogate(0),
+m_mouseInside(false),
+m_fullscreen(false),
+m_cursorGrabbed(false)
 {
     // Set that this process is DPI aware and can handle DPI scaling
     setProcessDpiAware();
@@ -156,18 +160,18 @@ m_cursorGrabbed   (false)
 
 ////////////////////////////////////////////////////////////
 WindowImplWin32::WindowImplWin32(VideoMode mode, const String& title, Uint32 style, const ContextSettings& /*settings*/) :
-m_handle          (nullptr),
-m_callback        (0),
-m_cursorVisible   (true), // might need to call GetCursorInfo
-m_lastCursor      (LoadCursor(nullptr, IDC_ARROW)),
-m_icon            (nullptr),
+m_handle(nullptr),
+m_callback(0),
+m_cursorVisible(true), // might need to call GetCursorInfo
+m_lastCursor(LoadCursor(nullptr, IDC_ARROW)),
+m_icon(nullptr),
 m_keyRepeatEnabled(true),
-m_lastSize        (mode.width, mode.height),
-m_resizing        (false),
-m_surrogate       (0),
-m_mouseInside     (false),
-m_fullscreen      ((style & Style::Fullscreen) != 0),
-m_cursorGrabbed   (m_fullscreen)
+m_lastSize(mode.size),
+m_resizing(false),
+m_surrogate(0),
+m_mouseInside(false),
+m_fullscreen((style & Style::Fullscreen) != 0),
+m_cursorGrabbed(m_fullscreen)
 {
     // Set that this process is DPI aware and can handle DPI scaling
     setProcessDpiAware();
@@ -178,10 +182,10 @@ m_cursorGrabbed   (m_fullscreen)
 
     // Compute position and size
     HDC screenDC = GetDC(nullptr);
-    int left   = (GetDeviceCaps(screenDC, HORZRES) - static_cast<int>(mode.width))  / 2;
-    int top    = (GetDeviceCaps(screenDC, VERTRES) - static_cast<int>(mode.height)) / 2;
-    int width  = static_cast<int>(mode.width);
-    int height = static_cast<int>(mode.height);
+    int left     = (GetDeviceCaps(screenDC, HORZRES) - static_cast<int>(mode.size.x)) / 2;
+    int top      = (GetDeviceCaps(screenDC, VERTRES) - static_cast<int>(mode.size.y)) / 2;
+    int width    = static_cast<int>(mode.size.x);
+    int height   = static_cast<int>(mode.size.y);
     ReleaseDC(nullptr, screenDC);
 
     // Choose the window style according to the Style parameter
@@ -192,9 +196,12 @@ m_cursorGrabbed   (m_fullscreen)
     }
     else
     {
-        if (style & Style::Titlebar) win32Style |= WS_CAPTION | WS_MINIMIZEBOX;
-        if (style & Style::Resize)   win32Style |= WS_THICKFRAME | WS_MAXIMIZEBOX;
-        if (style & Style::Close)    win32Style |= WS_SYSMENU;
+        if (style & Style::Titlebar)
+            win32Style |= WS_CAPTION | WS_MINIMIZEBOX;
+        if (style & Style::Resize)
+            win32Style |= WS_THICKFRAME | WS_MAXIMIZEBOX;
+        if (style & Style::Close)
+            win32Style |= WS_SYSMENU;
     }
 
     // In windowed mode, adjust width and height so that window will have the requested client area
@@ -207,10 +214,21 @@ m_cursorGrabbed   (m_fullscreen)
     }
 
     // Create the window
-    m_handle = CreateWindowW(className, title.toWideString().c_str(), win32Style, left, top, width, height, nullptr, nullptr, GetModuleHandle(nullptr), this);
+    m_handle = CreateWindowW(className,
+                             title.toWideString().c_str(),
+                             win32Style,
+                             left,
+                             top,
+                             width,
+                             height,
+                             nullptr,
+                             nullptr,
+                             GetModuleHandle(nullptr),
+                             this);
 
     // Register to receive device interface change notifications (used for joystick connection handling)
-    DEV_BROADCAST_DEVICEINTERFACE deviceInterface = {sizeof(DEV_BROADCAST_DEVICEINTERFACE), DBT_DEVTYP_DEVICEINTERFACE, 0, GUID_DEVINTERFACE_HID, {0}};
+    DEV_BROADCAST_DEVICEINTERFACE deviceInterface =
+        {sizeof(DEV_BROADCAST_DEVICEINTERFACE), DBT_DEVTYP_DEVICEINTERFACE, 0, GUID_DEVINTERFACE_HID, {0}};
     RegisterDeviceNotification(m_handle, &deviceInterface, DEVICE_NOTIFY_WINDOW_HANDLE);
 
     // If we're the first window handle, we only need to poll for joysticks when WM_DEVICECHANGE message is received
@@ -224,14 +242,14 @@ m_cursorGrabbed   (m_fullscreen)
 
     // By default, the OS limits the size of the window the the desktop size,
     // we have to resize it after creation to apply the real size
-    setSize(Vector2u(mode.width, mode.height));
+    setSize(mode.size);
 
     // Switch to fullscreen if requested
     if (m_fullscreen)
         switchToFullscreen(mode);
 
     // Increment window count
-    windowCount++;
+    ++windowCount;
 }
 
 
@@ -260,7 +278,7 @@ WindowImplWin32::~WindowImplWin32()
             DestroyWindow(m_handle);
 
         // Decrement the window count
-        windowCount--;
+        --windowCount;
 
         // Unregister window class if we were the last window
         if (windowCount == 0)
@@ -312,7 +330,7 @@ void WindowImplWin32::setPosition(const Vector2i& position)
 {
     SetWindowPos(m_handle, nullptr, position.x, position.y, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
 
-    if(m_cursorGrabbed)
+    if (m_cursorGrabbed)
         grabCursor(true);
 }
 
@@ -349,14 +367,14 @@ void WindowImplWin32::setTitle(const String& title)
 
 
 ////////////////////////////////////////////////////////////
-void WindowImplWin32::setIcon(unsigned int width, unsigned int height, const Uint8* pixels)
+void WindowImplWin32::setIcon(const Vector2u& size, const Uint8* pixels)
 {
     // First destroy the previous one
     if (m_icon)
         DestroyIcon(m_icon);
 
     // Windows wants BGRA pixels: swap red and blue channels
-    std::vector<Uint8> iconPixels(width * height * 4);
+    std::vector<Uint8> iconPixels(size.x * size.y * 4);
     for (std::size_t i = 0; i < iconPixels.size() / 4; ++i)
     {
         iconPixels[i * 4 + 0] = pixels[i * 4 + 2];
@@ -366,12 +384,18 @@ void WindowImplWin32::setIcon(unsigned int width, unsigned int height, const Uin
     }
 
     // Create the icon from the pixel array
-    m_icon = CreateIcon(GetModuleHandleW(nullptr), static_cast<int>(width), static_cast<int>(height), 1, 32, nullptr, iconPixels.data());
+    m_icon = CreateIcon(GetModuleHandleW(nullptr),
+                        static_cast<int>(size.x),
+                        static_cast<int>(size.y),
+                        1,
+                        32,
+                        nullptr,
+                        iconPixels.data());
 
     // Set it as both big and small icon of the window
     if (m_icon)
     {
-        SendMessageW(m_handle, WM_SETICON, ICON_BIG,   reinterpret_cast<LPARAM>(m_icon));
+        SendMessageW(m_handle, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(m_icon));
         SendMessageW(m_handle, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(m_icon));
     }
     else
@@ -477,8 +501,8 @@ void WindowImplWin32::switchToFullscreen(const VideoMode& mode)
 {
     DEVMODE devMode;
     devMode.dmSize       = sizeof(devMode);
-    devMode.dmPelsWidth  = mode.width;
-    devMode.dmPelsHeight = mode.height;
+    devMode.dmPelsWidth  = mode.size.x;
+    devMode.dmPelsHeight = mode.size.y;
     devMode.dmBitsPerPel = mode.bitsPerPixel;
     devMode.dmFields     = DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL;
 
@@ -490,11 +514,14 @@ void WindowImplWin32::switchToFullscreen(const VideoMode& mode)
     }
 
     // Make the window flags compatible with fullscreen mode
-    SetWindowLongPtr(m_handle, GWL_STYLE, static_cast<LONG_PTR>(WS_POPUP) | static_cast<LONG_PTR>(WS_CLIPCHILDREN) | static_cast<LONG_PTR>(WS_CLIPSIBLINGS));
+    SetWindowLongPtr(m_handle,
+                     GWL_STYLE,
+                     static_cast<LONG_PTR>(WS_POPUP) | static_cast<LONG_PTR>(WS_CLIPCHILDREN) |
+                         static_cast<LONG_PTR>(WS_CLIPSIBLINGS));
     SetWindowLongPtr(m_handle, GWL_EXSTYLE, WS_EX_APPWINDOW);
 
     // Resize the window so that it fits the entire screen
-    SetWindowPos(m_handle, HWND_TOP, 0, 0, static_cast<int>(mode.width), static_cast<int>(mode.height), SWP_FRAMECHANGED);
+    SetWindowPos(m_handle, HWND_TOP, 0, 0, static_cast<int>(mode.size.x), static_cast<int>(mode.size.y), SWP_FRAMECHANGED);
     ShowWindow(m_handle, SW_SHOW);
 
     // Set "this" as the current fullscreen window
@@ -527,9 +554,9 @@ void WindowImplWin32::cleanup()
 void WindowImplWin32::setTracking(bool track)
 {
     TRACKMOUSEEVENT mouseEvent;
-    mouseEvent.cbSize = sizeof(TRACKMOUSEEVENT);
-    mouseEvent.dwFlags = track ? TME_LEAVE : TME_CANCEL;
-    mouseEvent.hwndTrack = m_handle;
+    mouseEvent.cbSize      = sizeof(TRACKMOUSEEVENT);
+    mouseEvent.dwFlags     = track ? TME_LEAVE : TME_CANCEL;
+    mouseEvent.hwndTrack   = m_handle;
     mouseEvent.dwHoverTime = HOVER_DEFAULT;
     TrackMouseEvent(&mouseEvent);
 }
@@ -573,7 +600,8 @@ void WindowImplWin32::processEvent(UINT message, WPARAM wParam, LPARAM lParam)
         case WM_SETCURSOR:
         {
             // The mouse has moved, if the cursor is in our window we must refresh the cursor
-            if (LOWORD(lParam) == HTCLIENT) {
+            if (LOWORD(lParam) == HTCLIENT)
+            {
                 SetCursor(m_cursorVisible ? m_lastCursor : nullptr);
             }
 
@@ -625,7 +653,7 @@ void WindowImplWin32::processEvent(UINT message, WPARAM wParam, LPARAM lParam)
             m_resizing = false;
 
             // Ignore cases where the window has only been moved
-            if(m_lastSize != getSize())
+            if (m_lastSize != getSize())
             {
                 // Update the last handled size
                 m_lastSize = getSize();
@@ -648,7 +676,7 @@ void WindowImplWin32::processEvent(UINT message, WPARAM wParam, LPARAM lParam)
         {
             // We override the returned information to remove the default limit
             // (the OS doesn't allow windows bigger than the desktop by default)
-            auto* info = reinterpret_cast<MINMAXINFO*>(lParam);
+            auto* info             = reinterpret_cast<MINMAXINFO*>(lParam);
             info->ptMaxTrackSize.x = 50000;
             info->ptMaxTrackSize.y = 50000;
             break;
@@ -705,7 +733,7 @@ void WindowImplWin32::processEvent(UINT message, WPARAM wParam, LPARAM lParam)
 
                     // Send a TextEntered event
                     Event event;
-                    event.type = Event::TextEntered;
+                    event.type         = Event::TextEntered;
                     event.text.unicode = character;
                     pushEvent(event);
                 }
@@ -721,9 +749,9 @@ void WindowImplWin32::processEvent(UINT message, WPARAM wParam, LPARAM lParam)
             {
                 Event event;
                 event.type        = Event::KeyPressed;
-                event.key.alt     = HIWORD(GetKeyState(VK_MENU))    != 0;
+                event.key.alt     = HIWORD(GetKeyState(VK_MENU)) != 0;
                 event.key.control = HIWORD(GetKeyState(VK_CONTROL)) != 0;
-                event.key.shift   = HIWORD(GetKeyState(VK_SHIFT))   != 0;
+                event.key.shift   = HIWORD(GetKeyState(VK_SHIFT)) != 0;
                 event.key.system  = HIWORD(GetKeyState(VK_LWIN)) || HIWORD(GetKeyState(VK_RWIN));
                 event.key.code    = virtualKeyCodeToSF(wParam, lParam);
                 pushEvent(event);
@@ -737,9 +765,9 @@ void WindowImplWin32::processEvent(UINT message, WPARAM wParam, LPARAM lParam)
         {
             Event event;
             event.type        = Event::KeyReleased;
-            event.key.alt     = HIWORD(GetKeyState(VK_MENU))    != 0;
+            event.key.alt     = HIWORD(GetKeyState(VK_MENU)) != 0;
             event.key.control = HIWORD(GetKeyState(VK_CONTROL)) != 0;
-            event.key.shift   = HIWORD(GetKeyState(VK_SHIFT))   != 0;
+            event.key.shift   = HIWORD(GetKeyState(VK_SHIFT)) != 0;
             event.key.system  = HIWORD(GetKeyState(VK_LWIN)) || HIWORD(GetKeyState(VK_RWIN));
             event.key.code    = virtualKeyCodeToSF(wParam, lParam);
             pushEvent(event);
@@ -990,6 +1018,7 @@ void WindowImplWin32::processEvent(UINT message, WPARAM wParam, LPARAM lParam)
 ////////////////////////////////////////////////////////////
 Keyboard::Key WindowImplWin32::virtualKeyCodeToSF(WPARAM key, LPARAM flags)
 {
+    // clang-format off
     switch (key)
     {
         // Check the scancode to distinguish between left and right shift
@@ -1103,6 +1132,7 @@ Keyboard::Key WindowImplWin32::virtualKeyCodeToSF(WPARAM key, LPARAM flags)
         case '8':           return Keyboard::Num8;
         case '9':           return Keyboard::Num9;
     }
+    // clang-format on
 
     return Keyboard::Unknown;
 }
@@ -1147,4 +1177,3 @@ LRESULT CALLBACK WindowImplWin32::globalOnEvent(HWND handle, UINT message, WPARA
 } // namespace priv
 
 } // namespace sf
-

@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2021 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -28,9 +28,12 @@
 ////////////////////////////////////////////////////////////
 // Headers
 ////////////////////////////////////////////////////////////
+#include <SFML/System/Clock.hpp>
+#include <SFML/System/Time.hpp>
 #include <SFML/Window/ContextSettings.hpp>
 #include <SFML/Window/GlResource.hpp>
 #include <SFML/Window/WindowBase.hpp>
+
 #include <memory>
 
 
@@ -38,7 +41,7 @@ namespace sf
 {
 namespace priv
 {
-    class GlContext;
+class GlContext;
 }
 
 class Event;
@@ -50,7 +53,6 @@ class Event;
 class SFML_WINDOW_API Window : public WindowBase, GlResource
 {
 public:
-
     ////////////////////////////////////////////////////////////
     /// \brief Default constructor
     ///
@@ -79,7 +81,10 @@ public:
     /// \param settings Additional settings for the underlying OpenGL context
     ///
     ////////////////////////////////////////////////////////////
-    Window(VideoMode mode, const String& title, Uint32 style = Style::Default, const ContextSettings& settings = ContextSettings());
+    Window(VideoMode              mode,
+           const String&          title,
+           Uint32                 style    = Style::Default,
+           const ContextSettings& settings = ContextSettings());
 
     ////////////////////////////////////////////////////////////
     /// \brief Construct the window from an existing control
@@ -253,7 +258,6 @@ public:
     void display();
 
 private:
-
     ////////////////////////////////////////////////////////////
     /// \brief Processes an event before it is sent to the user
     ///
@@ -334,8 +338,7 @@ private:
 /// while (window.isOpen())
 /// {
 ///    // Event processing
-///    sf::Event event;
-///    while (window.pollEvent(event))
+///    for (sf::Event event; window.pollEvent(event);)
 ///    {
 ///        // Request for closing the window
 ///        if (event.type == sf::Event::Closed)

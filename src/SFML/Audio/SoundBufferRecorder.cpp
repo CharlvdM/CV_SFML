@@ -27,8 +27,10 @@
 ////////////////////////////////////////////////////////////
 #include <SFML/Audio/SoundBufferRecorder.hpp>
 #include <SFML/System/Err.hpp>
+
 #include <algorithm>
 #include <iterator>
+#include <ostream>
 
 
 namespace sf
