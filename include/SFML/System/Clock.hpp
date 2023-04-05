@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2023 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -22,8 +22,7 @@
 //
 ////////////////////////////////////////////////////////////
 
-#ifndef SFML_CLOCK_HPP
-#define SFML_CLOCK_HPP
+#pragma once
 
 ////////////////////////////////////////////////////////////
 // Headers
@@ -70,12 +69,14 @@ namespace priv
 ///
 ////////////////////////////////////////////////////////////
 #if defined(SFML_SYSTEM_ANDROID) && defined(SFML_ANDROID_USE_SUSPEND_AWARE_CLOCK)
-using MostSuitableClock = SuspendAwareClock;
+using ClockImpl = SuspendAwareClock;
 #else
-using MostSuitableClock = std::conditional_t<std::chrono::high_resolution_clock::is_steady,
-                                             std::chrono::high_resolution_clock,
-                                             std::chrono::steady_clock>;
+using ClockImpl = std::conditional_t<std::chrono::high_resolution_clock::is_steady, std::chrono::high_resolution_clock, std::chrono::steady_clock>;
 #endif
+
+static_assert(ClockImpl::is_steady, "Provided implementation is not a monotonic clock");
+static_assert(std::ratio_less_equal_v<ClockImpl::period, std::micro>,
+              "Clock resolution is too low. Expecting at least a microsecond precision");
 
 } // namespace priv
 
@@ -84,18 +85,12 @@ class Time;
 ////////////////////////////////////////////////////////////
 /// \brief Utility class that measures the elapsed time
 ///
+/// The clock starts automatically after being constructed.
+///
 ////////////////////////////////////////////////////////////
 class SFML_SYSTEM_API Clock
 {
 public:
-    ////////////////////////////////////////////////////////////
-    /// \brief Default constructor
-    ///
-    /// The clock starts automatically after being constructed.
-    ///
-    ////////////////////////////////////////////////////////////
-    Clock();
-
     ////////////////////////////////////////////////////////////
     /// \brief Get the elapsed time
     ///
@@ -120,33 +115,13 @@ public:
     Time restart();
 
 private:
-    using ClockImpl = priv::MostSuitableClock;
-
-    static_assert(ClockImpl::is_steady, "Provided implementation is not a monotonic clock");
-    static_assert(std::ratio_less_equal<ClockImpl::period, std::micro>::value,
-                  "Clock resolution is too low. Expecting at least a microsecond precision");
-
-    ////////////////////////////////////////////////////////////
-    /// \brief Convert clock duration to Time
-    ///
-    /// This function acts as a utility for converting clock
-    /// duration type instance into sf::Time
-    ///
-    /// \return Time instance
-    ///
-    ////////////////////////////////////////////////////////////
-    [[nodiscard]] static Time durationToTime(ClockImpl::duration duration);
-
     ////////////////////////////////////////////////////////////
     // Member data
     ////////////////////////////////////////////////////////////
-    ClockImpl::time_point m_startTime; //!< Time of last reset
+    priv::ClockImpl::time_point m_startTime{priv::ClockImpl::now()}; //!< Time of last reset
 };
 
 } // namespace sf
-
-
-#endif // SFML_CLOCK_HPP
 
 
 ////////////////////////////////////////////////////////////

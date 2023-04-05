@@ -22,8 +22,7 @@
 //
 ////////////////////////////////////////////////////////////
 
-#ifndef SFML_EGLCONTEXT_HPP
-#define SFML_EGLCONTEXT_HPP
+#pragma once
 
 ////////////////////////////////////////////////////////////
 // Headers
@@ -37,11 +36,10 @@
 #include <glad/egl.h>
 #if defined(SFML_SYSTEM_LINUX) && !defined(SFML_USE_DRM)
 #include <X11/Xlib.h>
+#include <X11/Xutil.h>
 #endif
 
-namespace sf
-{
-namespace priv
+namespace sf::priv
 {
 class EglContext : public GlContext
 {
@@ -187,15 +185,10 @@ private:
     ////////////////////////////////////////////////////////////
     // Member data
     ////////////////////////////////////////////////////////////
-    EGLDisplay m_display; //!< The internal EGL display
-    EGLContext m_context; //!< The internal EGL context
-    EGLSurface m_surface; //!< The internal EGL surface
-    EGLConfig  m_config;  //!< The internal EGL config
+    EGLDisplay m_display{EGL_NO_DISPLAY}; //!< The internal EGL display
+    EGLContext m_context{EGL_NO_CONTEXT}; //!< The internal EGL context
+    EGLSurface m_surface{EGL_NO_SURFACE}; //!< The internal EGL surface
+    EGLConfig  m_config{};                //!< The internal EGL config
 };
 
-} // namespace priv
-
-} // namespace sf
-
-
-#endif // SFML_EGLCONTEXT_HPP
+} // namespace sf::priv

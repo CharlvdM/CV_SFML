@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2023 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -35,9 +35,7 @@
 #include <ostream>
 
 
-namespace sf
-{
-namespace priv
+namespace sf::priv
 {
 ////////////////////////////////////////////////////////////
 bool SoundFileWriterFlac::check(const std::filesystem::path& filename)
@@ -47,9 +45,7 @@ bool SoundFileWriterFlac::check(const std::filesystem::path& filename)
 
 
 ////////////////////////////////////////////////////////////
-SoundFileWriterFlac::SoundFileWriterFlac() : m_encoder(nullptr), m_channelCount(0), m_samples32()
-{
-}
+SoundFileWriterFlac::SoundFileWriterFlac() = default;
 
 
 ////////////////////////////////////////////////////////////
@@ -93,7 +89,7 @@ bool SoundFileWriterFlac::open(const std::filesystem::path& filename, unsigned i
 
 
 ////////////////////////////////////////////////////////////
-void SoundFileWriterFlac::write(const Int16* samples, Uint64 count)
+void SoundFileWriterFlac::write(const std::int16_t* samples, std::uint64_t count)
 {
     while (count > 0)
     {
@@ -127,6 +123,4 @@ void SoundFileWriterFlac::close()
     }
 }
 
-} // namespace priv
-
-} // namespace sf
+} // namespace sf::priv

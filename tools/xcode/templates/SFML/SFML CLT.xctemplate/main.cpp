@@ -21,7 +21,7 @@
 int main(int argc, char const** argv)
 {
     // Create the main window
-    sf::RenderWindow window(sf::VideoMode(800, 600), "SFML window");
+    sf::RenderWindow window(sf::VideoMode({800, 600}), "SFML window");
 
     // Set the Icon
     sf::Image icon;
@@ -45,7 +45,7 @@ int main(int argc, char const** argv)
     {
         return EXIT_FAILURE;
     }
-    sf::Text text("Hello SFML", font, 50);
+    sf::Text text(font, "Hello SFML", 50);
     text.setFillColor(sf::Color::Black);
 
     // Load a music to play
@@ -89,6 +89,4 @@ int main(int argc, char const** argv)
         // Update the window
         window.display();
     }
-
-    return EXIT_SUCCESS;
 }

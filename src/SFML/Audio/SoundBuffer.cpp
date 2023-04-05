@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2023 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -44,7 +44,7 @@
 namespace sf
 {
 ////////////////////////////////////////////////////////////
-SoundBuffer::SoundBuffer() : m_buffer(0), m_duration()
+SoundBuffer::SoundBuffer()
 {
     // Create the buffer
     alCheck(alGenBuffers(1, &m_buffer));
@@ -52,11 +52,8 @@ SoundBuffer::SoundBuffer() : m_buffer(0), m_duration()
 
 
 ////////////////////////////////////////////////////////////
-SoundBuffer::SoundBuffer(const SoundBuffer& copy) :
-m_buffer(0),
-m_samples(copy.m_samples),
-m_duration(copy.m_duration),
-m_sounds() // don't copy the attached sounds
+SoundBuffer::SoundBuffer(const SoundBuffer& copy) : m_samples(copy.m_samples), m_duration(copy.m_duration)
+// don't copy the attached sounds
 {
     // Create the buffer
     alCheck(alGenBuffers(1, &m_buffer));
@@ -120,7 +117,10 @@ bool SoundBuffer::loadFromStream(InputStream& stream)
 
 
 ////////////////////////////////////////////////////////////
-bool SoundBuffer::loadFromSamples(const Int16* samples, Uint64 sampleCount, unsigned int channelCount, unsigned int sampleRate)
+bool SoundBuffer::loadFromSamples(const std::int16_t* samples,
+                                  std::uint64_t       sampleCount,
+                                  unsigned int        channelCount,
+                                  unsigned int        sampleRate)
 {
     if (samples && sampleCount && channelCount && sampleRate)
     {
@@ -164,14 +164,14 @@ bool SoundBuffer::saveToFile(const std::filesystem::path& filename) const
 
 
 ////////////////////////////////////////////////////////////
-const Int16* SoundBuffer::getSamples() const
+const std::int16_t* SoundBuffer::getSamples() const
 {
     return m_samples.empty() ? nullptr : m_samples.data();
 }
 
 
 ////////////////////////////////////////////////////////////
-Uint64 SoundBuffer::getSampleCount() const
+std::uint64_t SoundBuffer::getSampleCount() const
 {
     return m_samples.size();
 }
@@ -222,9 +222,9 @@ SoundBuffer& SoundBuffer::operator=(const SoundBuffer& right)
 bool SoundBuffer::initialize(InputSoundFile& file)
 {
     // Retrieve the sound parameters
-    Uint64       sampleCount  = file.getSampleCount();
-    unsigned int channelCount = file.getChannelCount();
-    unsigned int sampleRate   = file.getSampleRate();
+    std::uint64_t sampleCount  = file.getSampleCount();
+    unsigned int  channelCount = file.getChannelCount();
+    unsigned int  sampleRate   = file.getSampleRate();
 
     // Read the samples from the provided file
     m_samples.resize(static_cast<std::size_t>(sampleCount));
@@ -265,7 +265,7 @@ bool SoundBuffer::update(unsigned int channelCount, unsigned int sampleRate)
         soundPtr->resetBuffer();
 
     // Fill the buffer
-    auto size = static_cast<ALsizei>(m_samples.size() * sizeof(Int16));
+    auto size = static_cast<ALsizei>(m_samples.size() * sizeof(std::int16_t));
     alCheck(alBufferData(m_buffer, format, m_samples.data(), size, static_cast<ALsizei>(sampleRate)));
 
     // Compute the duration

@@ -22,13 +22,10 @@
 //
 ////////////////////////////////////////////////////////////
 
-#ifndef SFML_JOYSTICKIMPLANDROID_HPP
-#define SFML_JOYSTICKIMPLANDROID_HPP
+#pragma once
 
 
-namespace sf
-{
-namespace priv
+namespace sf::priv
 {
 ////////////////////////////////////////////////////////////
 /// \brief Android implementation of joysticks
@@ -106,9 +103,4 @@ private:
     Joystick::Identification m_identification; ///< Joystick identification
 };
 
-} // namespace priv
-
-} // namespace sf
-
-
-#endif // SFML_JOYSTICKIMPLANDROID_HPP
+} // namespace sf::priv

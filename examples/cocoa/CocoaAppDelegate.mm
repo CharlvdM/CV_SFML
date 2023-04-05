@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Marco Antognini (antognini.marco@gmail.com),
+// Copyright (C) 2007-2023 Marco Antognini (antognini.marco@gmail.com),
 //                         Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
@@ -37,7 +37,7 @@
 // Our PIMPL
 struct SFMLmainWindow
 {
-    SFMLmainWindow(sf::WindowHandle win) : renderWindow(win), background(sf::Color::Blue)
+    SFMLmainWindow(sf::WindowHandle win) : renderWindow(win), text(font), background(sf::Color::Blue)
     {
         std::string resPath = [[[NSBundle mainBundle] resourcePath] tostdstring];
         if (!logo.loadFromFile(resPath + "/logo.png"))
@@ -59,7 +59,6 @@ struct SFMLmainWindow
             NSLog(@"Couldn't load the font");
 
         text.setFillColor(sf::Color::White);
-        text.setFont(font);
     }
 
     sf::RenderWindow renderWindow;
@@ -199,7 +198,7 @@ struct SFMLmainWindow
     if (self.initialized)
     {
         float angle = [sender floatValue];
-        self.mainWindow->sprite.setRotation(angle);
+        self.mainWindow->sprite.setRotation(sf::degrees(angle));
     }
 }
 

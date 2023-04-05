@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2023 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -40,8 +40,8 @@
 #include <iomanip>
 #include <mutex>
 #include <ostream>
+#include <utility>
 #include <vector>
-
 
 #ifndef SFML_OPENGL_ES
 
@@ -102,8 +102,8 @@ bool getFileContents(const std::filesystem::path& filename, std::vector<char>& b
 // Read the contents of a stream into an array of char
 bool getStreamContents(sf::InputStream& stream, std::vector<char>& buffer)
 {
-    bool      success = true;
-    sf::Int64 size    = stream.getSize();
+    bool         success = true;
+    std::int64_t size    = stream.getSize();
     if (size > 0)
     {
         buffer.resize(static_cast<std::size_t>(size));
@@ -114,8 +114,8 @@ bool getStreamContents(sf::InputStream& stream, std::vector<char>& buffer)
             return false;
         }
 
-        sf::Int64 read = stream.read(buffer.data(), size);
-        success        = (read == size);
+        std::int64_t read = stream.read(buffer.data(), size);
+        success           = (read == size);
     }
     buffer.push_back('\0');
     return success;
@@ -187,10 +187,7 @@ struct Shader::UniformBinder
     /// \brief Constructor: set up state before uniform is set
     ///
     ////////////////////////////////////////////////////////////
-    UniformBinder(Shader& shader, const std::string& name) :
-    savedProgram(0),
-    currentProgram(castToGlHandle(shader.m_shaderProgram)),
-    location(-1)
+    UniformBinder(Shader& shader, const std::string& name) : currentProgram(castToGlHandle(shader.m_shaderProgram))
     {
         if (currentProgram)
         {
@@ -228,16 +225,14 @@ struct Shader::UniformBinder
     UniformBinder& operator=(const UniformBinder&) = delete;
 
     TransientContextLock lock;           //!< Lock to keep context active while uniform is bound
-    GLEXT_GLhandle       savedProgram;   //!< Handle to the previously active program object
+    GLEXT_GLhandle       savedProgram{}; //!< Handle to the previously active program object
     GLEXT_GLhandle       currentProgram; //!< Handle to the program object of the modified sf::Shader instance
-    GLint                location;       //!< Uniform location, used by the surrounding sf::Shader code
+    GLint                location{-1};   //!< Uniform location, used by the surrounding sf::Shader code
 };
 
 
 ////////////////////////////////////////////////////////////
-Shader::Shader() : m_shaderProgram(0), m_currentTexture(-1), m_textures(), m_uniforms()
-{
-}
+Shader::Shader() = default;
 
 
 ////////////////////////////////////////////////////////////
@@ -250,6 +245,38 @@ Shader::~Shader()
         glCheck(GLEXT_glDeleteObject(castToGlHandle(m_shaderProgram)));
 }
 
+////////////////////////////////////////////////////////////
+Shader::Shader(Shader&& source) noexcept :
+m_shaderProgram(std::exchange(source.m_shaderProgram, 0U)),
+m_currentTexture(std::exchange(source.m_currentTexture, -1)),
+m_textures(std::move(source.m_textures)),
+m_uniforms(std::move(source.m_uniforms))
+{
+}
+
+////////////////////////////////////////////////////////////
+Shader& Shader::operator=(Shader&& right) noexcept
+{
+    // Make sure we aren't moving ourselves.
+    if (&right == this)
+    {
+        return *this;
+    }
+    // Explicit scope for RAII
+    {
+        // Destroy effect program
+        TransientContextLock lock;
+        if (m_shaderProgram)
+            glCheck(GLEXT_glDeleteObject(castToGlHandle(m_shaderProgram)));
+    }
+
+    // Move the contents of right.
+    m_shaderProgram  = std::exchange(right.m_shaderProgram, 0U);
+    m_currentTexture = std::exchange(right.m_currentTexture, -1);
+    m_textures       = std::move(right.m_textures);
+    m_uniforms       = std::move(right.m_uniforms);
+    return *this;
+}
 
 ////////////////////////////////////////////////////////////
 bool Shader::loadFromFile(const std::filesystem::path& filename, Type type)
@@ -710,7 +737,7 @@ void Shader::bind(const Shader* shader)
     else
     {
         // Bind no shader
-        glCheck(GLEXT_glUseProgramObject(0));
+        glCheck(GLEXT_glUseProgramObject({}));
     }
 }
 
@@ -718,7 +745,7 @@ void Shader::bind(const Shader* shader)
 ////////////////////////////////////////////////////////////
 bool Shader::isAvailable()
 {
-    std::scoped_lock lock(isAvailableMutex);
+    std::lock_guard lock(isAvailableMutex);
 
     static bool checked   = false;
     static bool available = false;
@@ -743,7 +770,7 @@ bool Shader::isAvailable()
 ////////////////////////////////////////////////////////////
 bool Shader::isGeometryAvailable()
 {
-    std::scoped_lock lock(isAvailableMutex);
+    std::lock_guard lock(isAvailableMutex);
 
     static bool checked   = false;
     static bool available = false;
@@ -959,9 +986,7 @@ Shader::CurrentTextureType Shader::CurrentTexture;
 
 
 ////////////////////////////////////////////////////////////
-Shader::Shader() : m_shaderProgram(0), m_currentTexture(-1)
-{
-}
+Shader::Shader() = default;
 
 
 ////////////////////////////////////////////////////////////

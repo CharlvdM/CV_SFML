@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2023 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -88,18 +88,10 @@ void ensureInit()
 }
 
 
-namespace sf
-{
-namespace priv
+namespace sf::priv
 {
 ////////////////////////////////////////////////////////////
-EaglContext::EaglContext(EaglContext* shared) :
-m_context(nil),
-m_framebuffer(0),
-m_colorbuffer(0),
-m_depthbuffer(0),
-m_vsyncEnabled(false),
-m_clock()
+EaglContext::EaglContext(EaglContext* shared) : m_context(nil)
 {
     ensureInit();
 
@@ -114,12 +106,7 @@ m_clock()
 
 ////////////////////////////////////////////////////////////
 EaglContext::EaglContext(EaglContext* shared, const ContextSettings& settings, const WindowImpl& owner, unsigned int bitsPerPixel) :
-m_context(nil),
-m_framebuffer(0),
-m_colorbuffer(0),
-m_depthbuffer(0),
-m_vsyncEnabled(false),
-m_clock()
+m_context(nil)
 {
     ensureInit();
 
@@ -131,12 +118,7 @@ m_clock()
 
 ////////////////////////////////////////////////////////////
 EaglContext::EaglContext(EaglContext* /* shared */, const ContextSettings& /* settings */, const Vector2u& /* size */) :
-m_context(nil),
-m_framebuffer(0),
-m_colorbuffer(0),
-m_depthbuffer(0),
-m_vsyncEnabled(false),
-m_clock()
+m_context(nil)
 {
     ensureInit();
 
@@ -331,6 +313,4 @@ void EaglContext::createContext(EaglContext*           shared,
     makeCurrent(false);
 }
 
-} // namespace priv
-
-} // namespace sf
+} // namespace sf::priv

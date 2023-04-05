@@ -12,10 +12,6 @@ set(SRC
     ${SRCROOT}/Cursor.cpp
     ${INCROOT}/Cursor.hpp
     ${SRCROOT}/CursorImpl.hpp
-    ${SRCROOT}/EGLCheck.cpp
-    ${SRCROOT}/EGLCheck.hpp
-    ${SRCROOT}/EglContext.cpp
-    ${SRCROOT}/EglContext.hpp
     ${INCROOT}/Export.hpp
     ${SRCROOT}/GlContext.cpp
     ${SRCROOT}/GlContext.hpp
@@ -63,8 +59,6 @@ if(SFML_OS_WINDOWS)
         ${SRCROOT}/Win32/CursorImpl.cpp
         ${SRCROOT}/Win32/ClipboardImpl.hpp
         ${SRCROOT}/Win32/ClipboardImpl.cpp
-        ${SRCROOT}/Win32/WglContext.cpp
-        ${SRCROOT}/Win32/WglContext.hpp
         ${SRCROOT}/Win32/InputImpl.cpp
         ${SRCROOT}/Win32/InputImpl.hpp
         ${SRCROOT}/Win32/JoystickImpl.cpp
@@ -77,15 +71,26 @@ if(SFML_OS_WINDOWS)
         ${SRCROOT}/Win32/WindowImplWin32.cpp
         ${SRCROOT}/Win32/WindowImplWin32.hpp
     )
+    if(SFML_OPENGL_ES)
+        list(APPEND PLATFORM_SRC
+            ${SRCROOT}/EGLCheck.cpp
+            ${SRCROOT}/EGLCheck.hpp
+            ${SRCROOT}/EglContext.cpp
+            ${SRCROOT}/EglContext.hpp
+        )
+    else()
+        list(APPEND PLATFORM_SRC
+            ${SRCROOT}/Win32/WglContext.cpp
+            ${SRCROOT}/Win32/WglContext.hpp
+        )
+    endif()
     source_group("windows" FILES ${PLATFORM_SRC})
-
-    # make sure that we use the Unicode version of the Win API functions
-    add_definitions(-DUNICODE -D_UNICODE)
 elseif(SFML_OS_LINUX OR SFML_OS_FREEBSD OR SFML_OS_OPENBSD OR SFML_OS_NETBSD)
     if(SFML_USE_DRM)
         add_definitions(-DSFML_USE_DRM)
         set(PLATFORM_SRC
-            ${PLATFORM_SRC}
+            ${SRCROOT}/EGLCheck.cpp
+            ${SRCROOT}/EGLCheck.hpp
             ${SRCROOT}/DRM/CursorImpl.hpp
             ${SRCROOT}/DRM/CursorImpl.cpp
             ${SRCROOT}/DRM/ClipboardImpl.hpp
@@ -102,51 +107,62 @@ elseif(SFML_OS_LINUX OR SFML_OS_FREEBSD OR SFML_OS_OPENBSD OR SFML_OS_NETBSD)
         )
     else()
         set(PLATFORM_SRC
-            ${PLATFORM_SRC}
             ${SRCROOT}/Unix/CursorImpl.hpp
             ${SRCROOT}/Unix/CursorImpl.cpp
             ${SRCROOT}/Unix/ClipboardImpl.hpp
             ${SRCROOT}/Unix/ClipboardImpl.cpp
             ${SRCROOT}/Unix/InputImpl.cpp
             ${SRCROOT}/Unix/InputImpl.hpp
+            ${SRCROOT}/Unix/KeyboardImpl.hpp
+            ${SRCROOT}/Unix/KeyboardImpl.cpp
+            ${SRCROOT}/Unix/KeySymToKeyMapping.hpp
+            ${SRCROOT}/Unix/KeySymToKeyMapping.cpp
+            ${SRCROOT}/Unix/KeySymToUnicodeMapping.hpp
+            ${SRCROOT}/Unix/KeySymToUnicodeMapping.cpp
             ${SRCROOT}/Unix/SensorImpl.cpp
             ${SRCROOT}/Unix/SensorImpl.hpp
             ${SRCROOT}/Unix/Display.cpp
             ${SRCROOT}/Unix/Display.hpp
-            ${SRCROOT}/Unix/GlxContext.cpp
-            ${SRCROOT}/Unix/GlxContext.hpp
             ${SRCROOT}/Unix/VideoModeImpl.cpp
             ${SRCROOT}/Unix/VulkanImplX11.cpp
             ${SRCROOT}/Unix/VulkanImplX11.hpp
             ${SRCROOT}/Unix/WindowImplX11.cpp
             ${SRCROOT}/Unix/WindowImplX11.hpp
         )
+        if(SFML_OPENGL_ES)
+            list(APPEND PLATFORM_SRC
+                ${SRCROOT}/EGLCheck.cpp
+                ${SRCROOT}/EGLCheck.hpp
+                ${SRCROOT}/EglContext.cpp
+                ${SRCROOT}/EglContext.hpp
+            )
+        else()
+             list(APPEND PLATFORM_SRC
+                ${SRCROOT}/Unix/GlxContext.cpp
+                ${SRCROOT}/Unix/GlxContext.hpp
+            )
+        endif()
     endif()
     if(SFML_OS_LINUX)
-        set(PLATFORM_SRC
-            ${PLATFORM_SRC}
+        list(APPEND PLATFORM_SRC
             ${SRCROOT}/Unix/JoystickImpl.cpp
             ${SRCROOT}/Unix/JoystickImpl.hpp
         )
     elseif(SFML_OS_FREEBSD)
-        set(PLATFORM_SRC
-            ${PLATFORM_SRC}
+        list(APPEND PLATFORM_SRC
             ${SRCROOT}/FreeBSD/JoystickImpl.cpp
             ${SRCROOT}/FreeBSD/JoystickImpl.hpp
         )
     elseif(SFML_OS_OPENBSD)
-        set(PLATFORM_SRC
-            ${PLATFORM_SRC}
+        list(APPEND PLATFORM_SRC
             ${SRCROOT}/OpenBSD/JoystickImpl.cpp
             ${SRCROOT}/OpenBSD/JoystickImpl.hpp
         )
     elseif(SFML_OS_NETBSD)
-        set(PLATFORM_SRC
-            ${PLATFORM_SRC}
+        list(APPEND PLATFORM_SRC
             ${SRCROOT}/NetBSD/JoystickImpl.cpp
             ${SRCROOT}/NetBSD/JoystickImpl.hpp
         )
-
     endif()
     source_group("unix" FILES ${PLATFORM_SRC})
 elseif(SFML_OS_MACOSX)
@@ -234,6 +250,10 @@ elseif(SFML_OS_IOS)
     source_group("ios" FILES ${PLATFORM_SRC})
 elseif(SFML_OS_ANDROID)
     set(PLATFORM_SRC
+        ${SRCROOT}/EGLCheck.cpp
+        ${SRCROOT}/EGLCheck.hpp
+        ${SRCROOT}/EglContext.cpp
+        ${SRCROOT}/EglContext.hpp
         ${SRCROOT}/Android/CursorImpl.hpp
         ${SRCROOT}/Android/CursorImpl.cpp
         ${SRCROOT}/Android/ClipboardImpl.hpp
@@ -257,16 +277,13 @@ sfml_add_library(Window
 # DRM libraries
 if(SFML_OS_LINUX OR SFML_OS_FREEBSD OR SFML_OS_OPENBSD OR SFML_OS_NETBSD)
     if(SFML_USE_DRM)
-        target_sources(sfml-window PRIVATE $<TARGET_OBJECTS:drm-common>)
         sfml_find_package(DRM INCLUDE "DRM_INCLUDE_DIR" LINK "DRM_LIBRARY")
-        target_include_directories(sfml-window PRIVATE ${PROJECT_SOURCE_DIR}/extlibs/headers/drm ${DRM_INCLUDE_DIR}/libdrm)
+        target_include_directories(sfml-window PRIVATE ${DRM_INCLUDE_DIR}/libdrm)
         sfml_find_package(GBM INCLUDE "GBM_INCLUDE_DIR" LINK "GBM_LIBRARY")
         target_link_libraries(sfml-window PRIVATE drm gbm EGL)
-        add_library(drm-common OBJECT ${PROJECT_SOURCE_DIR}/extlibs/headers/drm/drm-common.c)
-        target_include_directories(drm-common PRIVATE ${PROJECT_SOURCE_DIR}/extlibs/headers/drm ${DRM_INCLUDE_DIR}/libdrm)
     else()
-        sfml_find_package(X11 INCLUDE "X11_INCLUDE_DIR" LINK "X11_X11_LIB" "X11_Xrandr_LIB" "X11_Xcursor_LIB")
-        target_link_libraries(sfml-window PRIVATE X11)
+        find_package(X11 REQUIRED COMPONENTS Xrandr Xcursor)
+        target_link_libraries(sfml-window PRIVATE X11::X11 X11::Xrandr X11::Xcursor)
     endif()
 endif()
 target_link_libraries(sfml-window PUBLIC SFML::System)
@@ -274,20 +291,24 @@ target_link_libraries(sfml-window PUBLIC SFML::System)
 # glad sources
 target_include_directories(sfml-window SYSTEM PRIVATE "${PROJECT_SOURCE_DIR}/extlibs/headers/glad/include")
 
+# When static linking on macOS, we need to add this flag for objective C to work
+# https://developer.apple.com/library/archive/qa/qa1490/_index.html
+if ((NOT BUILD_SHARED_LIBS) AND SFML_OS_MACOSX)
+    target_link_libraries(sfml-window PRIVATE -ObjC)
+endif()
+
 # Vulkan headers
 target_include_directories(sfml-window SYSTEM PRIVATE "${PROJECT_SOURCE_DIR}/extlibs/headers/vulkan")
 
 # CMake 3.11 and later prefer to choose GLVND, but we choose legacy OpenGL for backward compability
 # (unless the OpenGL_GL_PREFERENCE was explicitly set)
 # See CMP0072 for more details (cmake --help-policy CMP0072)
-if (NOT OpenGL_GL_PREFERENCE)
+if(NOT OpenGL_GL_PREFERENCE)
     set(OpenGL_GL_PREFERENCE "LEGACY")
 endif()
 
 if(SFML_OS_IOS)
-    sfml_add_external(GLES LINK "-framework OpenGLES")
-
-    target_link_libraries(sfml-window PRIVATE GLES)
+    target_link_libraries(sfml-window PRIVATE "-framework OpenGLES")
 elseif(SFML_OS_ANDROID)
     sfml_find_package(GLES INCLUDE "GLES_INCLUDE_DIR" LINK "GLES_LIBRARY")
     sfml_find_package(EGL INCLUDE "EGL_INCLUDE_DIR" LINK "EGL_LIBRARY")
@@ -316,7 +337,18 @@ elseif(SFML_OS_FREEBSD)
 elseif(SFML_OS_MACOSX)
     target_link_libraries(sfml-window PRIVATE "-framework Foundation" "-framework AppKit" "-framework IOKit" "-framework Carbon")
 elseif(SFML_OS_IOS)
-    target_link_libraries(sfml-window PRIVATE "-framework Foundation" "-framework UIKit" "-framework CoreGraphics" "-framework QuartzCore" "-framework CoreMotion")
+    target_link_libraries(sfml-window PUBLIC "-framework Foundation" "-framework UIKit" "-framework CoreGraphics" "-framework QuartzCore" "-framework CoreMotion")
 elseif(SFML_OS_ANDROID)
     target_link_libraries(sfml-window PRIVATE android)
+endif()
+
+# on some platforms (e.g. Raspberry Pi 3 armhf), GCC requires linking libatomic to use <atomic> features
+# that aren't supported by native CPU instructions (64-bit atomic operations on 32-bit architecture)
+if(SFML_COMPILER_GCC)
+    include(CheckCXXSourceCompiles)
+    check_cxx_source_compiles("#include <atomic>
+        int main(){std::atomic_ullong x(1); return x.fetch_add(1);}" ATOMIC_TEST)
+    if(NOT ATOMIC_TEST)
+        target_link_libraries(sfml-window PRIVATE atomic)
+    endif()
 endif()

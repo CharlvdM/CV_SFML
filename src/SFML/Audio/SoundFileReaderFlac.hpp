@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2023 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -22,8 +22,7 @@
 //
 ////////////////////////////////////////////////////////////
 
-#ifndef SFML_SOUNDFILEREADERFLAC_HPP
-#define SFML_SOUNDFILEREADERFLAC_HPP
+#pragma once
 
 ////////////////////////////////////////////////////////////
 // Headers
@@ -34,9 +33,7 @@
 #include <vector>
 
 
-namespace sf
-{
-namespace priv
+namespace sf::priv
 {
 ////////////////////////////////////////////////////////////
 /// \brief Implementation of sound file reader that handles FLAC files
@@ -55,7 +52,6 @@ public:
     ////////////////////////////////////////////////////////////
     [[nodiscard]] static bool check(InputStream& stream);
 
-public:
     ////////////////////////////////////////////////////////////
     /// \brief Default constructor
     ///
@@ -90,7 +86,7 @@ public:
     /// \param sampleOffset Index of the sample to jump to, relative to the beginning
     ///
     ////////////////////////////////////////////////////////////
-    void seek(Uint64 sampleOffset) override;
+    void seek(std::uint64_t sampleOffset) override;
 
     ////////////////////////////////////////////////////////////
     /// \brief Read audio samples from the open file
@@ -101,21 +97,20 @@ public:
     /// \return Number of samples actually read (may be less than \a maxCount)
     ///
     ////////////////////////////////////////////////////////////
-    [[nodiscard]] Uint64 read(Int16* samples, Uint64 maxCount) override;
+    [[nodiscard]] std::uint64_t read(std::int16_t* samples, std::uint64_t maxCount) override;
 
-public:
     ////////////////////////////////////////////////////////////
     /// \brief Hold the state that is passed to the decoder callbacks
     ///
     ////////////////////////////////////////////////////////////
     struct ClientData
     {
-        InputStream*          stream;
-        SoundFileReader::Info info;
-        Int16*                buffer;
-        Uint64                remaining;
-        std::vector<Int16>    leftovers;
-        bool                  error;
+        InputStream*              stream{};
+        SoundFileReader::Info     info;
+        std::int16_t*             buffer{};
+        std::uint64_t             remaining{};
+        std::vector<std::int16_t> leftovers;
+        bool                      error{};
     };
 
 private:
@@ -128,13 +123,8 @@ private:
     ////////////////////////////////////////////////////////////
     // Member data
     ////////////////////////////////////////////////////////////
-    FLAC__StreamDecoder* m_decoder;    //!< FLAC decoder
+    FLAC__StreamDecoder* m_decoder{};  //!< FLAC decoder
     ClientData           m_clientData; //!< Structure passed to the decoder callbacks
 };
 
-} // namespace priv
-
-} // namespace sf
-
-
-#endif // SFML_SOUNDFILEREADERFLAC_HPP
+} // namespace sf::priv

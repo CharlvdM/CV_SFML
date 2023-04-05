@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2023 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -36,20 +36,18 @@
 namespace sf
 {
 ////////////////////////////////////////////////////////////
-Sound::Sound() : m_buffer(nullptr)
-{
-}
+Sound::Sound() = default;
 
 
 ////////////////////////////////////////////////////////////
-Sound::Sound(const SoundBuffer& buffer) : m_buffer(nullptr)
+Sound::Sound(const SoundBuffer& buffer)
 {
     setBuffer(buffer);
 }
 
 
 ////////////////////////////////////////////////////////////
-Sound::Sound(const Sound& copy) : SoundSource(copy), m_buffer(nullptr)
+Sound::Sound(const Sound& copy) : SoundSource(copy)
 {
     if (copy.m_buffer)
         setBuffer(*copy.m_buffer);

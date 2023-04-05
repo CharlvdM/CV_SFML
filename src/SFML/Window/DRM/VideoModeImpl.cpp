@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2020 Andrew Mickelson
+// Copyright (C) 2023 Andrew Mickelson
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -29,20 +29,16 @@
 #include <SFML/Window/DRM/DRMContext.hpp>
 #include <SFML/Window/VideoModeImpl.hpp>
 
-#include <drm-common.h>
 
-
-namespace sf
-{
-namespace priv
+namespace sf::priv
 {
 ////////////////////////////////////////////////////////////
 std::vector<VideoMode> VideoModeImpl::getFullscreenModes()
 {
     std::vector<VideoMode> modes;
 
-    drm*                drm  = sf::priv::DRMContext::getDRM();
-    drmModeConnectorPtr conn = drm->saved_connector;
+    Drm&                drm  = sf::priv::DRMContext::getDRM();
+    drmModeConnectorPtr conn = drm.savedConnector;
 
     if (conn)
     {
@@ -59,14 +55,12 @@ std::vector<VideoMode> VideoModeImpl::getFullscreenModes()
 ////////////////////////////////////////////////////////////
 VideoMode VideoModeImpl::getDesktopMode()
 {
-    drm*               drm = sf::priv::DRMContext::getDRM();
-    drmModeModeInfoPtr ptr = drm->mode;
+    Drm&               drm = sf::priv::DRMContext::getDRM();
+    drmModeModeInfoPtr ptr = drm.mode;
     if (ptr)
         return VideoMode({ptr->hdisplay, ptr->vdisplay});
     else
         return VideoMode({0, 0});
 }
 
-} // namespace priv
-
-} // namespace sf
+} // namespace sf::priv

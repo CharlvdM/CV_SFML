@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2023 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -40,6 +40,7 @@
 namespace
 {
 // Filter the events received by windows (only allow those matching a specific window)
+// NOLINTNEXTLINE(readability-non-const-parameter)
 Bool checkEvent(::Display*, XEvent* event, XPointer userData)
 {
     // Just check if the event matches the window
@@ -47,9 +48,7 @@ Bool checkEvent(::Display*, XEvent* event, XPointer userData)
 }
 } // namespace
 
-namespace sf
-{
-namespace priv
+namespace sf::priv
 {
 
 ////////////////////////////////////////////////////////////
@@ -74,10 +73,10 @@ void ClipboardImpl::processEvents()
 
 
 ////////////////////////////////////////////////////////////
-ClipboardImpl::ClipboardImpl() : m_window(0), m_requestResponded(false)
+ClipboardImpl::ClipboardImpl()
 {
     // Open a connection with the X server
-    m_display = OpenDisplay();
+    m_display = openDisplay();
 
     // Get the atoms we need to make use of the clipboard
     m_clipboard      = getAtom("CLIPBOARD", false);
@@ -105,7 +104,7 @@ ClipboardImpl::~ClipboardImpl()
     }
 
     // Close the connection with the X server
-    CloseDisplay(m_display);
+    closeDisplay(m_display);
 }
 
 
@@ -218,7 +217,7 @@ void ClipboardImpl::processEvent(XEvent& windowEvent)
             int            format;
             unsigned long  items;
             unsigned long  remainingBytes;
-            unsigned char* data = 0;
+            unsigned char* data = nullptr;
 
             // The selection owner should have wrote the selection
             // data to the specified window property
@@ -343,7 +342,7 @@ void ClipboardImpl::processEvent(XEvent& windowEvent)
                 {
                     // Respond to a request for conversion to a UTF-8 string
                     // or an encoding of our choosing (we always choose UTF-8)
-                    std::basic_string<Uint8> data = m_clipboardContents.toUtf8();
+                    std::basic_string<std::uint8_t> data = m_clipboardContents.toUtf8();
 
                     XChangeProperty(m_display,
                                     selectionRequestEvent.requestor,
@@ -380,6 +379,4 @@ void ClipboardImpl::processEvent(XEvent& windowEvent)
     }
 }
 
-} // namespace priv
-
-} // namespace sf
+} // namespace sf::priv

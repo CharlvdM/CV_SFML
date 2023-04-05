@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2023 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -35,20 +35,18 @@
 namespace sf
 {
 ////////////////////////////////////////////////////////////
-Sprite::Sprite() : m_texture(nullptr), m_textureRect()
-{
-}
+Sprite::Sprite() = default;
 
 
 ////////////////////////////////////////////////////////////
-Sprite::Sprite(const Texture& texture) : m_texture(nullptr), m_textureRect()
+Sprite::Sprite(const Texture& texture)
 {
     setTexture(texture, true);
 }
 
 
 ////////////////////////////////////////////////////////////
-Sprite::Sprite(const Texture& texture, const IntRect& rectangle) : m_texture(nullptr), m_textureRect()
+Sprite::Sprite(const Texture& texture, const IntRect& rectangle)
 {
     // Compute the texture area
     setTextureRect(rectangle);
@@ -141,7 +139,7 @@ void Sprite::draw(RenderTarget& target, const RenderStates& states) const
 
         statesCopy.transform *= getTransform();
         statesCopy.texture = m_texture;
-        target.draw(m_vertices, 4, TriangleStrip, statesCopy);
+        target.draw(m_vertices, 4, PrimitiveType::TriangleStrip, statesCopy);
     }
 }
 

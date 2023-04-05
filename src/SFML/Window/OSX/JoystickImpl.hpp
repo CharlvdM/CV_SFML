@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Marco Antognini (antognini.marco@gmail.com),
+// Copyright (C) 2007-2023 Marco Antognini (antognini.marco@gmail.com),
 //                         Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
@@ -23,8 +23,7 @@
 //
 ////////////////////////////////////////////////////////////
 
-#ifndef SFML_JOYSTICKIMPLOSX_HPP
-#define SFML_JOYSTICKIMPLOSX_HPP
+#pragma once
 
 ////////////////////////////////////////////////////////////
 // Headers
@@ -37,9 +36,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace sf
-{
-namespace priv
+namespace sf::priv
 {
 ////////////////////////////////////////////////////////////
 /// \brief Mac OS X implementation of joysticks
@@ -124,14 +121,10 @@ private:
     unsigned int             m_index;          ///< SFML index
     Joystick::Identification m_identification; ///< Joystick identification
 
+    // NOLINTNEXTLINE(readability-identifier-naming)
     static Location m_locationIDs[sf::Joystick::Count]; ///< Global Joystick register
     /// For a corresponding SFML index, m_locationIDs is either some USB
     /// location or 0 if there isn't currently a connected joystick device
 };
 
-} // namespace priv
-
-} // namespace sf
-
-
-#endif // SFML_JOYSTICKIMPLOSX_HPP
+} // namespace sf::priv

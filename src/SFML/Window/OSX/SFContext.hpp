@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Marco Antognini (antognini.marco@gmail.com),
+// Copyright (C) 2007-2023 Marco Antognini (antognini.marco@gmail.com),
 //                         Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
@@ -23,8 +23,7 @@
 //
 ////////////////////////////////////////////////////////////
 
-#ifndef SFML_SFCONTEXT_HPP
-#define SFML_SFCONTEXT_HPP
+#pragma once
 
 ////////////////////////////////////////////////////////////
 // Headers
@@ -54,9 +53,7 @@ using NSWindowRef        = void*;
 #endif
 
 
-namespace sf
-{
-namespace priv
+namespace sf::priv
 {
 ////////////////////////////////////////////////////////////
 /// \brief OSX (Cocoa) implementation of OpenGL contexts
@@ -98,7 +95,7 @@ public:
     /// \brief Destructor
     ///
     ////////////////////////////////////////////////////////////
-    ~SFContext();
+    ~SFContext() override;
 
     ////////////////////////////////////////////////////////////
     /// \brief Get the address of an OpenGL function
@@ -156,13 +153,9 @@ private:
     ////////////////////////////////////////////////////////////
     // Member data
     ////////////////////////////////////////////////////////////
-    NSOpenGLContextRef m_context; ///< OpenGL context.
-    NSOpenGLViewRef    m_view;    ///< Only for offscreen context.
-    NSWindowRef        m_window;  ///< Only for offscreen context.
+    NSOpenGLContextRef m_context{}; ///< OpenGL context.
+    NSOpenGLViewRef    m_view{};    ///< Only for offscreen context.
+    NSWindowRef        m_window{};  ///< Only for offscreen context.
 };
 
-} // namespace priv
-
-} // namespace sf
-
-#endif // SFML_SFCONTEXT_HPP
+} // namespace sf::priv

@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Marco Antognini (antognini.marco@gmail.com),
+// Copyright (C) 2007-2023 Marco Antognini (antognini.marco@gmail.com),
 //                         Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
@@ -40,9 +40,7 @@
 
 #include <ostream>
 
-namespace sf
-{
-namespace priv
+namespace sf::priv
 {
 
 ////////////////////////////////////////////////////////////
@@ -85,7 +83,7 @@ void showMouseCursor()
 #pragma mark WindowImplCocoa's ctor/dtor
 
 ////////////////////////////////////////////////////////////
-WindowImplCocoa::WindowImplCocoa(WindowHandle handle) : m_showCursor(true)
+WindowImplCocoa::WindowImplCocoa(WindowHandle handle)
 {
     AutoreleasePool pool;
     // Treat the handle as it real type
@@ -118,8 +116,7 @@ WindowImplCocoa::WindowImplCocoa(WindowHandle handle) : m_showCursor(true)
 
 
 ////////////////////////////////////////////////////////////
-WindowImplCocoa::WindowImplCocoa(VideoMode mode, const String& title, unsigned long style, const ContextSettings& /*settings*/) :
-m_showCursor(true)
+WindowImplCocoa::WindowImplCocoa(VideoMode mode, const String& title, unsigned long style, const ContextSettings& /*settings*/)
 {
     AutoreleasePool pool;
     // Transform the app process.
@@ -142,7 +139,7 @@ WindowImplCocoa::~WindowImplCocoa()
     // Tell the window/view controller (and the OpenGL view) that the delegate
     // (this object) no longer exists to prevent events being sent to the window
     // after it has been deleted.
-    [m_delegate setRequesterTo:0];
+    [m_delegate setRequesterTo:nil];
     [m_delegate release];
 
     // Put the next window in front, if any.
@@ -448,7 +445,7 @@ void WindowImplCocoa::setTitle(const String& title)
 
 
 ////////////////////////////////////////////////////////////
-void WindowImplCocoa::setIcon(const Vector2u& size, const Uint8* pixels)
+void WindowImplCocoa::setIcon(const Vector2u& size, const std::uint8_t* pixels)
 {
     AutoreleasePool pool;
     [m_delegate setIconTo:size.x by:size.y with:pixels];
@@ -526,6 +523,4 @@ bool WindowImplCocoa::hasFocus() const
 }
 
 
-} // namespace priv
-
-} // namespace sf
+} // namespace sf::priv

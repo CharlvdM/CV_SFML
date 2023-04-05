@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2023 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -57,6 +57,18 @@ namespace WglContextImpl
 thread_local sf::priv::WglContext* currentContext(nullptr);
 
 
+// We use a different loader for wgl functions since we load them directly from OpenGL32.dll
+sf::GlFunctionPointer getOpenGl32Function(const char* name)
+{
+    static const HMODULE module = GetModuleHandleA("OpenGL32.dll");
+
+    if (module)
+        return reinterpret_cast<sf::GlFunctionPointer>(GetProcAddress(module, reinterpret_cast<LPCSTR>(name)));
+
+    return nullptr;
+}
+
+
 ////////////////////////////////////////////////////////////
 void ensureInit()
 {
@@ -65,7 +77,7 @@ void ensureInit()
     {
         initialized = true;
 
-        gladLoadWGL(nullptr, sf::priv::WglContext::getFunction);
+        gladLoadWGL(nullptr, getOpenGl32Function);
     }
 }
 
@@ -80,16 +92,14 @@ void ensureExtensionsInit(HDC deviceContext)
 
         // We don't check the return value since the extension
         // flags are cleared even if loading fails
-        gladLoadWGL(deviceContext, sf::priv::WglContext::getFunction);
+        gladLoadWGL(deviceContext, getOpenGl32Function);
     }
 }
 } // namespace WglContextImpl
 } // namespace
 
 
-namespace sf
-{
-namespace priv
+namespace sf::priv
 {
 ////////////////////////////////////////////////////////////
 String getErrorString(DWORD errorCode)
@@ -122,12 +132,7 @@ WglContext::WglContext(WglContext* shared) : WglContext(shared, ContextSettings(
 
 
 ////////////////////////////////////////////////////////////
-WglContext::WglContext(WglContext* shared, const ContextSettings& settings, const WindowImpl& owner, unsigned int bitsPerPixel) :
-m_window(nullptr),
-m_pbuffer(nullptr),
-m_deviceContext(nullptr),
-m_context(nullptr),
-m_ownsWindow(false)
+WglContext::WglContext(WglContext* shared, const ContextSettings& settings, const WindowImpl& owner, unsigned int bitsPerPixel)
 {
     WglContextImpl::ensureInit();
 
@@ -143,12 +148,7 @@ m_ownsWindow(false)
 
 
 ////////////////////////////////////////////////////////////
-WglContext::WglContext(WglContext* shared, const ContextSettings& settings, const Vector2u& size) :
-m_window(nullptr),
-m_pbuffer(nullptr),
-m_deviceContext(nullptr),
-m_context(nullptr),
-m_ownsWindow(false)
+WglContext::WglContext(WglContext* shared, const ContextSettings& settings, const Vector2u& size)
 {
     WglContextImpl::ensureInit();
 
@@ -204,6 +204,8 @@ WglContext::~WglContext()
 ////////////////////////////////////////////////////////////
 GlFunctionPointer WglContext::getFunction(const char* name)
 {
+    assert(WglContextImpl::currentContext != nullptr);
+
     auto address = reinterpret_cast<GlFunctionPointer>(wglGetProcAddress(reinterpret_cast<LPCSTR>(name)));
 
     if (address)
@@ -215,13 +217,9 @@ GlFunctionPointer WglContext::getFunction(const char* name)
             return address;
     }
 
-    static HMODULE module = nullptr;
-
-    if (!module)
-        module = GetModuleHandleA("OpenGL32.dll");
-
-    if (module)
-        return reinterpret_cast<GlFunctionPointer>(GetProcAddress(module, reinterpret_cast<LPCSTR>(name)));
+    // If we are using the generic GDI implementation, try loading directly from OpenGL32.dll as well
+    if (WglContextImpl::currentContext->m_isGeneric)
+        return WglContextImpl::getOpenGl32Function(name);
 
     return nullptr;
 }
@@ -478,6 +476,20 @@ void WglContext::updateSettingsFromPixelFormat()
         return;
     }
 
+    // Detect if we are running using the generic GDI implementation and warn
+    if (actualFormat.dwFlags & PFD_GENERIC_FORMAT)
+    {
+        m_isGeneric = true;
+
+        err() << "Warning: Detected \"Microsoft Corporation GDI Generic\" OpenGL implementation" << std::endl;
+
+        // Detect if the generic GDI implementation is not accelerated
+        if (!(actualFormat.dwFlags & PFD_GENERIC_ACCELERATED))
+            err() << "Warning: The \"Microsoft Corporation GDI Generic\" OpenGL implementation is not "
+                     "hardware-accelerated"
+                  << std::endl;
+    }
+
     if (SF_GLAD_WGL_ARB_pixel_format)
     {
         const int attributes[] = {WGL_DEPTH_BITS_ARB, WGL_STENCIL_BITS_ARB};
@@ -693,7 +705,7 @@ void WglContext::createContext(WglContext* shared)
             if (sharedContext)
             {
                 static std::recursive_mutex mutex;
-                std::scoped_lock            lock(mutex);
+                std::lock_guard             lock(mutex);
 
                 if (WglContextImpl::currentContext == shared)
                 {
@@ -765,7 +777,7 @@ void WglContext::createContext(WglContext* shared)
         {
             // wglShareLists doesn't seem to be thread-safe
             static std::recursive_mutex mutex;
-            std::scoped_lock            lock(mutex);
+            std::lock_guard             lock(mutex);
 
             if (WglContextImpl::currentContext == shared)
             {
@@ -795,6 +807,4 @@ void WglContext::createContext(WglContext* shared)
     }
 }
 
-} // namespace priv
-
-} // namespace sf
+} // namespace sf::priv

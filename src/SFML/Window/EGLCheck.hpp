@@ -22,8 +22,7 @@
 //
 ////////////////////////////////////////////////////////////
 
-#ifndef SFML_EGLCHECK_HPP
-#define SFML_EGLCHECK_HPP
+#pragma once
 
 ////////////////////////////////////////////////////////////
 // Headers
@@ -31,11 +30,10 @@
 #include <SFML/Config.hpp>
 
 #include <filesystem>
+#include <string_view>
 
 
-namespace sf
-{
-namespace priv
+namespace sf::priv
 {
 ////////////////////////////////////////////////////////////
 /// Let's define a macro to quickly check every EGL API call
@@ -66,10 +64,6 @@ namespace priv
 /// \param expression The evaluated expression as a string
 ///
 ////////////////////////////////////////////////////////////
-void eglCheckError(const std::filesystem::path& file, unsigned int line, const char* expression);
+void eglCheckError(const std::filesystem::path& file, unsigned int line, std::string_view expression);
 
-} // namespace priv
-} // namespace sf
-
-
-#endif // SFML_EGLCHECK_HPP
+} // namespace sf::priv

@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2023 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -32,13 +32,11 @@
 #include <algorithm>
 #include <cassert>
 #include <cctype>
-#include <cstdlib>
 #include <ostream>
+#include <random>
 
 
-namespace sf
-{
-namespace priv
+namespace sf::priv
 {
 ////////////////////////////////////////////////////////////
 bool SoundFileWriterOgg::check(const std::filesystem::path& filename)
@@ -48,9 +46,7 @@ bool SoundFileWriterOgg::check(const std::filesystem::path& filename)
 
 
 ////////////////////////////////////////////////////////////
-SoundFileWriterOgg::SoundFileWriterOgg() : m_channelCount(0), m_file(), m_ogg(), m_vorbis(), m_state()
-{
-}
+SoundFileWriterOgg::SoundFileWriterOgg() = default;
 
 
 ////////////////////////////////////////////////////////////
@@ -67,7 +63,8 @@ bool SoundFileWriterOgg::open(const std::filesystem::path& filename, unsigned in
     m_channelCount = channelCount;
 
     // Initialize the ogg/vorbis stream
-    ogg_stream_init(&m_ogg, std::rand());
+    static std::mt19937 rng(std::random_device{}());
+    ogg_stream_init(&m_ogg, std::uniform_int_distribution(0, std::numeric_limits<int>::max())(rng));
     vorbis_info_init(&m_vorbis);
 
     // Setup the encoder: VBR, automatic bitrate management
@@ -96,7 +93,9 @@ bool SoundFileWriterOgg::open(const std::filesystem::path& filename, unsigned in
     vorbis_comment_init(&comment);
 
     // Generate the header packets
-    ogg_packet header, headerComm, headerCode;
+    ogg_packet header;
+    ogg_packet headerComm;
+    ogg_packet headerCode;
     status = vorbis_analysis_headerout(&m_state, &comment, &header, &headerComm, &headerCode);
     vorbis_comment_clear(&comment);
     if (status < 0)
@@ -125,7 +124,7 @@ bool SoundFileWriterOgg::open(const std::filesystem::path& filename, unsigned in
 
 
 ////////////////////////////////////////////////////////////
-void SoundFileWriterOgg::write(const Int16* samples, Uint64 count)
+void SoundFileWriterOgg::write(const std::int16_t* samples, std::uint64_t count)
 {
     // Vorbis has issues with buffers that are too large, so we ask for 64K
     constexpr int bufferSize = 65536;
@@ -208,6 +207,4 @@ void SoundFileWriterOgg::close()
     vorbis_info_clear(&m_vorbis);
 }
 
-} // namespace priv
-
-} // namespace sf
+} // namespace sf::priv

@@ -22,8 +22,7 @@
 //
 ////////////////////////////////////////////////////////////
 
-#ifndef SFML_WINDOWIMPLANDROID_HPP
-#define SFML_WINDOWIMPLANDROID_HPP
+#pragma once
 
 ////////////////////////////////////////////////////////////
 // Headers
@@ -36,9 +35,7 @@
 #include <android/input.h>
 
 
-namespace sf
-{
-namespace priv
+namespace sf::priv
 {
 ////////////////////////////////////////////////////////////
 /// \brief Android implementation of WindowImpl
@@ -127,7 +124,7 @@ public:
     /// \param pixels Pointer to the pixels in memory, format must be RGBA 32 bits
     ///
     ////////////////////////////////////////////////////////////
-    void setIcon(const Vector2u& size, const Uint8* pixels) override;
+    void setIcon(const Vector2u& size, const std::uint8_t* pixels) override;
 
     ////////////////////////////////////////////////////////////
     /// \brief Show or hide the window
@@ -220,7 +217,7 @@ private:
     /// \return Corresponding SFML key code
     ///
     ////////////////////////////////////////////////////////////
-    static Keyboard::Key androidKeyToSF(int32_t key);
+    static Keyboard::Key androidKeyToSF(std::int32_t key);
 
     ////////////////////////////////////////////////////////////
     /// \brief Get Unicode decoded from the input event
@@ -233,14 +230,9 @@ private:
     static int getUnicode(AInputEvent* event);
 
     Vector2u m_size;
-    bool     m_windowBeingCreated;
-    bool     m_windowBeingDestroyed;
-    bool     m_hasFocus;
+    bool     m_windowBeingCreated{};
+    bool     m_windowBeingDestroyed{};
+    bool     m_hasFocus{};
 };
 
-} // namespace priv
-
-} // namespace sf
-
-
-#endif // SFML_WINDOWIMPLANDROID_HPP
+} // namespace sf::priv

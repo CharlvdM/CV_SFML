@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2023 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -50,14 +50,12 @@ using AtomMap = std::unordered_map<std::string, Atom>;
 AtomMap atoms;
 } // namespace
 
-namespace sf
-{
-namespace priv
+namespace sf::priv
 {
 ////////////////////////////////////////////////////////////
-Display* OpenDisplay()
+Display* openDisplay()
 {
-    std::scoped_lock lock(mutex);
+    std::lock_guard lock(mutex);
 
     if (referenceCount == 0)
     {
@@ -78,9 +76,9 @@ Display* OpenDisplay()
 
 
 ////////////////////////////////////////////////////////////
-void CloseDisplay(Display* display)
+void closeDisplay(Display* display)
 {
-    std::scoped_lock lock(mutex);
+    std::lock_guard lock(mutex);
 
     assert(display == sharedDisplay);
 
@@ -90,9 +88,9 @@ void CloseDisplay(Display* display)
 }
 
 ////////////////////////////////////////////////////////////
-XIM OpenXIM()
+XIM openXim()
 {
-    std::scoped_lock lock(mutex);
+    std::lock_guard lock(mutex);
 
     assert(sharedDisplay != nullptr);
 
@@ -128,9 +126,9 @@ XIM OpenXIM()
 }
 
 ////////////////////////////////////////////////////////////
-void CloseXIM(XIM xim)
+void closeXim(XIM xim)
 {
-    std::scoped_lock lock(mutex);
+    std::lock_guard lock(mutex);
 
     assert(xim == sharedXIM);
 
@@ -146,17 +144,15 @@ Atom getAtom(const std::string& name, bool onlyIfExists)
     if (auto it = atoms.find(name); it != atoms.end())
         return it->second;
 
-    Display* display = OpenDisplay();
+    Display* display = openDisplay();
 
     Atom atom = XInternAtom(display, name.c_str(), onlyIfExists ? True : False);
 
-    CloseDisplay(display);
+    closeDisplay(display);
 
     atoms[name] = atom;
 
     return atom;
 }
 
-} // namespace priv
-
-} // namespace sf
+} // namespace sf::priv

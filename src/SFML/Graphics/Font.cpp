@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2023 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -59,12 +59,13 @@ namespace
 // FreeType callbacks that operate on a sf::InputStream
 unsigned long read(FT_Stream rec, unsigned long offset, unsigned char* buffer, unsigned long count)
 {
-    auto  convertedOffset = static_cast<sf::Int64>(offset);
+    auto  convertedOffset = static_cast<std::int64_t>(offset);
     auto* stream          = static_cast<sf::InputStream*>(rec->descriptor.pointer);
     if (stream->seek(convertedOffset) == convertedOffset)
     {
         if (count > 0)
-            return static_cast<unsigned long>(stream->read(reinterpret_cast<char*>(buffer), static_cast<sf::Int64>(count)));
+            return static_cast<unsigned long>(
+                stream->read(reinterpret_cast<char*>(buffer), static_cast<std::int64_t>(count)));
         else
             return 0;
     }
@@ -85,10 +86,10 @@ inline T reinterpret(const U& input)
 }
 
 // Combine outline thickness, boldness and font glyph index into a single 64-bit key
-sf::Uint64 combine(float outlineThickness, bool bold, sf::Uint32 index)
+std::uint64_t combine(float outlineThickness, bool bold, std::uint32_t index)
 {
-    return (static_cast<sf::Uint64>(reinterpret<sf::Uint32>(outlineThickness)) << 32) |
-           (static_cast<sf::Uint64>(bold) << 31) | index;
+    return (static_cast<std::uint64_t>(reinterpret<std::uint32_t>(outlineThickness)) << 32) |
+           (static_cast<std::uint64_t>(bold) << 31) | index;
 }
 } // namespace
 
@@ -125,12 +126,11 @@ public:
 
 
 ////////////////////////////////////////////////////////////
-Font::Font() : m_fontHandles(), m_isSmooth(true), m_info()
-{
-}
+Font::Font() = default;
 
 
 ////////////////////////////////////////////////////////////
+// NOLINTNEXTLINE(modernize-use-equals-default)
 Font::Font(const Font& copy) :
 m_fontHandles(copy.m_fontHandles),
 m_isSmooth(copy.m_isSmooth),
@@ -298,8 +298,7 @@ bool Font::loadFromStream(InputStream& stream)
     }
 
     // Prepare a wrapper for our stream, that we'll pass to FreeType callbacks
-    fontHandles->streamRec = std::make_unique<FT_StreamRec>();
-    std::memset(fontHandles->streamRec.get(), 0, sizeof(*fontHandles->streamRec));
+    fontHandles->streamRec                     = std::make_unique<FT_StreamRec>();
     fontHandles->streamRec->base               = nullptr;
     fontHandles->streamRec->size               = static_cast<unsigned long>(stream.getSize());
     fontHandles->streamRec->pos                = 0;
@@ -356,15 +355,15 @@ const Font::Info& Font::getInfo() const
 
 
 ////////////////////////////////////////////////////////////
-const Glyph& Font::getGlyph(Uint32 codePoint, unsigned int characterSize, bool bold, float outlineThickness) const
+const Glyph& Font::getGlyph(std::uint32_t codePoint, unsigned int characterSize, bool bold, float outlineThickness) const
 {
     // Get the page corresponding to the character size
     GlyphTable& glyphs = loadPage(characterSize).glyphs;
 
     // Build the key by combining the glyph index (based on code point), bold flag, and outline thickness
-    Uint64 key = combine(outlineThickness,
-                         bold,
-                         FT_Get_Char_Index(m_fontHandles ? m_fontHandles->face.get() : nullptr, codePoint));
+    std::uint64_t key = combine(outlineThickness,
+                                bold,
+                                FT_Get_Char_Index(m_fontHandles ? m_fontHandles->face.get() : nullptr, codePoint));
 
     // Search the glyph into the cache
     if (auto it = glyphs.find(key); it != glyphs.end())
@@ -382,20 +381,20 @@ const Glyph& Font::getGlyph(Uint32 codePoint, unsigned int characterSize, bool b
 
 
 ////////////////////////////////////////////////////////////
-bool Font::hasGlyph(Uint32 codePoint) const
+bool Font::hasGlyph(std::uint32_t codePoint) const
 {
     return FT_Get_Char_Index(m_fontHandles ? m_fontHandles->face.get() : nullptr, codePoint) != 0;
 }
 
 
 ////////////////////////////////////////////////////////////
-float Font::getKerning(Uint32 first, Uint32 second, unsigned int characterSize, bool bold) const
+float Font::getKerning(std::uint32_t first, std::uint32_t second, unsigned int characterSize, bool bold) const
 {
     // Special case where first or second is 0 (null character)
     if (first == 0 || second == 0)
         return 0.f;
 
-    auto face = m_fontHandles ? m_fontHandles->face.get() : nullptr;
+    auto* face = m_fontHandles ? m_fontHandles->face.get() : nullptr;
 
     if (face && setCurrentSize(characterSize))
     {
@@ -433,7 +432,7 @@ float Font::getKerning(Uint32 first, Uint32 second, unsigned int characterSize, 
 ////////////////////////////////////////////////////////////
 float Font::getLineSpacing(unsigned int characterSize) const
 {
-    auto face = m_fontHandles ? m_fontHandles->face.get() : nullptr;
+    auto* face = m_fontHandles ? m_fontHandles->face.get() : nullptr;
 
     if (face && setCurrentSize(characterSize))
     {
@@ -449,7 +448,7 @@ float Font::getLineSpacing(unsigned int characterSize) const
 ////////////////////////////////////////////////////////////
 float Font::getUnderlinePosition(unsigned int characterSize) const
 {
-    auto face = m_fontHandles ? m_fontHandles->face.get() : nullptr;
+    auto* face = m_fontHandles ? m_fontHandles->face.get() : nullptr;
 
     if (face && setCurrentSize(characterSize))
     {
@@ -470,7 +469,7 @@ float Font::getUnderlinePosition(unsigned int characterSize) const
 ////////////////////////////////////////////////////////////
 float Font::getUnderlineThickness(unsigned int characterSize) const
 {
-    auto face = m_fontHandles ? m_fontHandles->face.get() : nullptr;
+    auto* face = m_fontHandles ? m_fontHandles->face.get() : nullptr;
 
     if (face && setCurrentSize(characterSize))
     {
@@ -542,7 +541,7 @@ void Font::cleanup()
 
     // Reset members
     m_pages.clear();
-    std::vector<Uint8>().swap(m_pixelBuffer);
+    std::vector<std::uint8_t>().swap(m_pixelBuffer);
 }
 
 
@@ -554,7 +553,7 @@ Font::Page& Font::loadPage(unsigned int characterSize) const
 
 
 ////////////////////////////////////////////////////////////
-Glyph Font::loadGlyph(Uint32 codePoint, unsigned int characterSize, bool bold, float outlineThickness) const
+Glyph Font::loadGlyph(std::uint32_t codePoint, unsigned int characterSize, bool bold, float outlineThickness) const
 {
     // The glyph to return
     Glyph glyph;
@@ -564,7 +563,7 @@ Glyph Font::loadGlyph(Uint32 codePoint, unsigned int characterSize, bool bold, f
         return glyph;
 
     // Get our FT_Face
-    auto face = m_fontHandles->face.get();
+    auto* face = m_fontHandles->face.get();
     if (!face)
         return glyph;
 
@@ -591,13 +590,13 @@ Glyph Font::loadGlyph(Uint32 codePoint, unsigned int characterSize, bool bold, f
     {
         if (bold)
         {
-            auto outlineGlyph = reinterpret_cast<FT_OutlineGlyph>(glyphDesc);
+            auto* outlineGlyph = reinterpret_cast<FT_OutlineGlyph>(glyphDesc);
             FT_Outline_Embolden(&outlineGlyph->outline, weight);
         }
 
         if (outlineThickness != 0)
         {
-            auto stroker = m_fontHandles->stroker.get();
+            auto* stroker = m_fontHandles->stroker.get();
 
             FT_Stroker_Set(stroker,
                            static_cast<FT_Fixed>(outlineThickness * static_cast<float>(1 << 6)),
@@ -612,7 +611,7 @@ Glyph Font::loadGlyph(Uint32 codePoint, unsigned int characterSize, bool bold, f
     // Warning! After this line, do not read any data from glyphDesc directly, use
     // bitmapGlyph.root to access the FT_Glyph data.
     FT_Glyph_To_Bitmap(&glyphDesc, FT_RENDER_MODE_NORMAL, nullptr, 1);
-    auto       bitmapGlyph = reinterpret_cast<FT_BitmapGlyph>(glyphDesc);
+    auto*      bitmapGlyph = reinterpret_cast<FT_BitmapGlyph>(glyphDesc);
     FT_Bitmap& bitmap      = bitmapGlyph->bitmap;
 
     // Apply bold if necessary -- fallback technique using bitmap (lower quality)
@@ -667,8 +666,8 @@ Glyph Font::loadGlyph(Uint32 codePoint, unsigned int characterSize, bool bold, f
         // Resize the pixel buffer to the new size and fill it with transparent white pixels
         m_pixelBuffer.resize(static_cast<std::size_t>(width) * static_cast<std::size_t>(height) * 4);
 
-        Uint8* current = m_pixelBuffer.data();
-        Uint8* end     = current + width * height * 4;
+        std::uint8_t* current = m_pixelBuffer.data();
+        std::uint8_t* end     = current + width * height * 4;
 
         while (current != end)
         {
@@ -679,7 +678,7 @@ Glyph Font::loadGlyph(Uint32 codePoint, unsigned int characterSize, bool bold, f
         }
 
         // Extract the glyph's pixels from the bitmap
-        const Uint8* pixels = bitmap.buffer;
+        const std::uint8_t* pixels = bitmap.buffer;
         if (bitmap.pixel_mode == FT_PIXEL_MODE_MONO)
         {
             // Pixels are 1 bit monochrome values
@@ -806,7 +805,7 @@ bool Font::setCurrentSize(unsigned int characterSize) const
     // only when necessary to avoid killing performances
 
     // m_fontHandles and m_fontHandles->face are checked to be non-null before calling this method
-    auto      face        = m_fontHandles->face.get();
+    auto*     face        = m_fontHandles->face.get();
     FT_UShort currentSize = face->size->metrics.x_ppem;
 
     if (currentSize != characterSize)
@@ -842,7 +841,7 @@ bool Font::setCurrentSize(unsigned int characterSize) const
 
 
 ////////////////////////////////////////////////////////////
-Font::Page::Page(bool smooth) : nextRow(3)
+Font::Page::Page(bool smooth)
 {
     // Make sure that the texture is initialized by default
     sf::Image image;

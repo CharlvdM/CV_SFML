@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2023 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -89,9 +89,7 @@ using WindowImplType = sf::priv::WindowImplAndroid;
 #endif
 
 
-namespace sf
-{
-namespace priv
+namespace sf::priv
 {
 
 ////////////////////////////////////////////////////////////
@@ -101,7 +99,7 @@ struct WindowImpl::JoystickStatesImpl
 };
 
 ////////////////////////////////////////////////////////////
-std::unique_ptr<WindowImpl> WindowImpl::create(VideoMode mode, const String& title, Uint32 style, const ContextSettings& settings)
+std::unique_ptr<WindowImpl> WindowImpl::create(VideoMode mode, const String& title, std::uint32_t style, const ContextSettings& settings)
 {
     return std::make_unique<WindowImplType>(mode, title, style, settings);
 }
@@ -115,7 +113,7 @@ std::unique_ptr<WindowImpl> WindowImpl::create(WindowHandle handle)
 
 
 ////////////////////////////////////////////////////////////
-WindowImpl::WindowImpl() : m_joystickStatesImpl(std::make_unique<JoystickStatesImpl>()), m_joystickThreshold(0.1f)
+WindowImpl::WindowImpl() : m_joystickStatesImpl(std::make_unique<JoystickStatesImpl>())
 {
     // Get the initial joystick states
     JoystickManager::getInstance().update();
@@ -297,7 +295,7 @@ void WindowImpl::processSensorEvents()
 ////////////////////////////////////////////////////////////
 bool WindowImpl::createVulkanSurface([[maybe_unused]] const VkInstance&            instance,
                                      [[maybe_unused]] VkSurfaceKHR&                surface,
-                                     [[maybe_unused]] const VkAllocationCallbacks* allocator)
+                                     [[maybe_unused]] const VkAllocationCallbacks* allocator) const
 {
 #if defined(SFML_VULKAN_IMPLEMENTATION_NOT_AVAILABLE)
 
@@ -310,6 +308,4 @@ bool WindowImpl::createVulkanSurface([[maybe_unused]] const VkInstance&         
 #endif
 }
 
-} // namespace priv
-
-} // namespace sf
+} // namespace sf::priv

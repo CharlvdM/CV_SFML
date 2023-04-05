@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2023 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -35,9 +35,7 @@
 namespace sf
 {
 ////////////////////////////////////////////////////////////
-VideoMode::VideoMode() : size(0, 0), bitsPerPixel(0)
-{
-}
+VideoMode::VideoMode() = default;
 
 
 ////////////////////////////////////////////////////////////
@@ -59,14 +57,12 @@ VideoMode VideoMode::getDesktopMode()
 ////////////////////////////////////////////////////////////
 const std::vector<VideoMode>& VideoMode::getFullscreenModes()
 {
-    static std::vector<VideoMode> modes;
-
-    // Populate the array on first call
-    if (modes.empty())
+    static const auto modes = []
     {
-        modes = priv::VideoModeImpl::getFullscreenModes();
-        std::sort(modes.begin(), modes.end(), std::greater<VideoMode>());
-    }
+        std::vector<VideoMode> result = priv::VideoModeImpl::getFullscreenModes();
+        std::sort(result.begin(), result.end(), std::greater<>());
+        return result;
+    }();
 
     return modes;
 }

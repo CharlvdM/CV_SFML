@@ -22,8 +22,7 @@
 //
 ////////////////////////////////////////////////////////////
 
-#ifndef SFML_RESOURCESTREAM_HPP
-#define SFML_RESOURCESTREAM_HPP
+#pragma once
 
 ////////////////////////////////////////////////////////////
 // Headers
@@ -38,9 +37,7 @@
 #include <string>
 
 
-namespace sf
-{
-namespace priv
+namespace sf::priv
 {
 ////////////////////////////////////////////////////////////
 /// \brief Read from Android asset files
@@ -72,7 +69,7 @@ public:
     /// \return The number of bytes actually read, or -1 on error
     ///
     ////////////////////////////////////////////////////////////
-    Int64 read(void* data, Int64 size) override;
+    std::int64_t read(void* data, std::int64_t size) override;
 
     ////////////////////////////////////////////////////////////
     /// \brief Change the current reading position in the asset file
@@ -82,7 +79,7 @@ public:
     /// \return The position actually sought to, or -1 on error
     ///
     ////////////////////////////////////////////////////////////
-    Int64 seek(Int64 position) override;
+    std::int64_t seek(std::int64_t position) override;
 
     ////////////////////////////////////////////////////////////
     /// \brief Get the current reading position in the asset file
@@ -90,7 +87,7 @@ public:
     /// \return The current position, or -1 on error.
     ///
     ////////////////////////////////////////////////////////////
-    Int64 tell() override;
+    std::int64_t tell() override;
 
     ////////////////////////////////////////////////////////////
     /// \brief Return the size of the asset file
@@ -98,7 +95,7 @@ public:
     /// \return The total number of bytes available in the asset, or -1 on error
     ///
     ////////////////////////////////////////////////////////////
-    Int64 getSize() override;
+    std::int64_t getSize() override;
 
 private:
     ////////////////////////////////////////////////////////////
@@ -107,9 +104,4 @@ private:
     AAsset* m_file; ///< The asset file to read
 };
 
-} // namespace priv
-
-} // namespace sf
-
-
-#endif // SFML_RESOURCESTREAM_HPP
+} // namespace sf::priv

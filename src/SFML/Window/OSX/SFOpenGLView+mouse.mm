@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Marco Antognini (antognini.marco@gmail.com),
+// Copyright (C) 2007-2023 Marco Antognini (antognini.marco@gmail.com),
 //                         Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
@@ -79,7 +79,7 @@
     m_mouseIsIn     = [self isMouseInside];
 
     // Send event if needed.
-    if (m_requester != 0)
+    if (m_requester != nil)
     {
         if (mouseWasIn && !m_mouseIsIn)
             m_requester->mouseMovedOut();
@@ -133,7 +133,7 @@
 {
     sf::Mouse::Button button = [SFOpenGLView mouseButtonFromEvent:theEvent];
 
-    if (m_requester != 0)
+    if (m_requester != nil)
     {
         NSPoint loc = [self cursorPositionFromEvent:theEvent];
 
@@ -178,7 +178,7 @@
 {
     sf::Mouse::Button button = [SFOpenGLView mouseButtonFromEvent:theEvent];
 
-    if (m_requester != 0)
+    if (m_requester != nil)
     {
         NSPoint loc = [self cursorPositionFromEvent:theEvent];
 
@@ -243,7 +243,7 @@
     // (mouseEntered: and mouseExited: are not immediately called
     //  when the mouse is dragged. That would be too easy!)
     [self updateMouseState];
-    if ((m_requester != 0) && m_mouseIsIn)
+    if ((m_requester != nil) && m_mouseIsIn)
         m_requester->mouseMovedAt(static_cast<int>(loc.x), static_cast<int>(loc.y));
 }
 
@@ -299,7 +299,7 @@
 ////////////////////////////////////////////////////////
 - (void)scrollWheel:(NSEvent*)theEvent
 {
-    if (m_requester != 0)
+    if (m_requester != nil)
     {
         NSPoint loc = [self cursorPositionFromEvent:theEvent];
         m_requester->mouseWheelScrolledAt(static_cast<float>([theEvent deltaX]),
@@ -384,8 +384,8 @@
         NSSize  size   = [self frame].size;
         NSPoint origin = [self frame].origin;
         NSPoint oldPos = rawPos;
-        rawPos.x       = std::min(std::max(origin.x, rawPos.x), origin.x + size.width - 1);
-        rawPos.y       = std::min(std::max(origin.y + 1, rawPos.y), origin.y + size.height);
+        rawPos.x       = std::clamp(rawPos.x, origin.x, origin.x + size.width - 1);
+        rawPos.y       = std::clamp(rawPos.y, origin.y + 1, origin.y + size.height);
         // Note: the `-1` and `+1` on the two lines above prevent the user to click
         // on the left or below the window, repectively, and therefore prevent the
         // application to lose focus by accident. The sign of this offset is determinded

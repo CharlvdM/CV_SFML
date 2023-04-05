@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2023 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -22,8 +22,7 @@
 //
 ////////////////////////////////////////////////////////////
 
-#ifndef SFML_SOUNDFILEREADEROGG_HPP
-#define SFML_SOUNDFILEREADEROGG_HPP
+#pragma once
 
 ////////////////////////////////////////////////////////////
 // Headers
@@ -33,9 +32,7 @@
 #include <vorbis/vorbisfile.h>
 
 
-namespace sf
-{
-namespace priv
+namespace sf::priv
 {
 ////////////////////////////////////////////////////////////
 /// \brief Implementation of sound file reader that handles OGG/Vorbis files
@@ -54,7 +51,6 @@ public:
     ////////////////////////////////////////////////////////////
     [[nodiscard]] static bool check(InputStream& stream);
 
-public:
     ////////////////////////////////////////////////////////////
     /// \brief Default constructor
     ///
@@ -91,7 +87,7 @@ public:
     /// \param sampleOffset Index of the sample to jump to, relative to the beginning
     ///
     ////////////////////////////////////////////////////////////
-    void seek(Uint64 sampleOffset) override;
+    void seek(std::uint64_t sampleOffset) override;
 
     ////////////////////////////////////////////////////////////
     /// \brief Read audio samples from the open file
@@ -102,7 +98,7 @@ public:
     /// \return Number of samples actually read (may be less than \a maxCount)
     ///
     ////////////////////////////////////////////////////////////
-    [[nodiscard]] Uint64 read(Int16* samples, Uint64 maxCount) override;
+    [[nodiscard]] std::uint64_t read(std::int16_t* samples, std::uint64_t maxCount) override;
 
 private:
     ////////////////////////////////////////////////////////////
@@ -114,13 +110,8 @@ private:
     ////////////////////////////////////////////////////////////
     // Member data
     ////////////////////////////////////////////////////////////
-    OggVorbis_File m_vorbis;       // ogg/vorbis file handle
-    unsigned int   m_channelCount; // number of channels of the open sound file
+    OggVorbis_File m_vorbis{};       // ogg/vorbis file handle
+    unsigned int   m_channelCount{}; // number of channels of the open sound file
 };
 
-} // namespace priv
-
-} // namespace sf
-
-
-#endif // SFML_SOUNDFILEREADEROGG_HPP
+} // namespace sf::priv

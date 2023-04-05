@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2023 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -22,8 +22,7 @@
 //
 ////////////////////////////////////////////////////////////
 
-#ifndef SFML_WGLCONTEXT_HPP
-#define SFML_WGLCONTEXT_HPP
+#pragma once
 
 ////////////////////////////////////////////////////////////
 // Headers
@@ -33,9 +32,7 @@
 #include <glad/wgl.h>
 
 
-namespace sf
-{
-namespace priv
+namespace sf::priv
 {
 ////////////////////////////////////////////////////////////
 /// \brief Windows (WGL) implementation of OpenGL contexts
@@ -179,15 +176,12 @@ private:
     ////////////////////////////////////////////////////////////
     // Member data
     ////////////////////////////////////////////////////////////
-    HWND        m_window;        //!< Window to which the context is attached
-    HPBUFFERARB m_pbuffer;       //!< Handle to a pbuffer if one was created
-    HDC         m_deviceContext; //!< Device context associated to the context
-    HGLRC       m_context;       //!< OpenGL context
-    bool        m_ownsWindow;    //!< Do we own the target window?
+    HWND        m_window{};        //!< Window to which the context is attached
+    HPBUFFERARB m_pbuffer{};       //!< Handle to a pbuffer if one was created
+    HDC         m_deviceContext{}; //!< Device context associated to the context
+    HGLRC       m_context{};       //!< OpenGL context
+    bool        m_ownsWindow{};    //!< Do we own the target window?
+    bool        m_isGeneric{};     //!< Is this context provided by the generic GDI implementation?
 };
 
-} // namespace priv
-
-} // namespace sf
-
-#endif // SFML_WGLCONTEXT_HPP
+} // namespace sf::priv

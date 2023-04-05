@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Marco Antognini (antognini.marco@gmail.com),
+// Copyright (C) 2007-2023 Marco Antognini (antognini.marco@gmail.com),
 //                         Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
@@ -33,9 +33,7 @@
 #include <algorithm>
 #include <ostream>
 
-namespace sf
-{
-namespace priv
+namespace sf::priv
 {
 
 ////////////////////////////////////////////////////////////
@@ -58,7 +56,7 @@ std::vector<VideoMode> VideoModeImpl::getFullscreenModes()
     const CFIndex modesCount = CFArrayGetCount(cgmodes);
     for (CFIndex i = 0; i < modesCount; ++i)
     {
-        CGDisplayModeRef cgmode = static_cast<CGDisplayModeRef>(const_cast<void*>(CFArrayGetValueAtIndex(cgmodes, i)));
+        auto* cgmode = static_cast<CGDisplayModeRef>(const_cast<void*>(CFArrayGetValueAtIndex(cgmodes, i)));
 
         VideoMode mode = convertCGModeToSFMode(cgmode);
 
@@ -96,5 +94,4 @@ VideoMode VideoModeImpl::getDesktopMode()
     return mode;
 }
 
-} // namespace priv
-} // namespace sf
+} // namespace sf::priv

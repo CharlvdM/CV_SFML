@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////
-/// \mainpage
+/// \mainpage SFML Documentation
 ///
 /// \section welcome Welcome
 /// Welcome to the official SFML documentation. Here you will find a detailed
@@ -18,7 +18,7 @@
 /// int main()
 /// {
 ///     // Create the main window
-///     sf::RenderWindow window(sf::VideoMode(800, 600), "SFML window");
+///     sf::RenderWindow window(sf::VideoMode({800, 600}), "SFML window");
 ///
 ///     // Load a sprite to display
 ///     sf::Texture texture;
@@ -30,7 +30,7 @@
 ///     sf::Font font;
 ///     if (!font.loadFromFile("arial.ttf"))
 ///         return EXIT_FAILURE;
-///     sf::Text text("Hello SFML", font, 50);
+///     sf::Text text(font, "Hello SFML", 50);
 ///
 ///     // Load a music to play
 ///     sf::Music music;
@@ -63,8 +63,6 @@
 ///         // Update the window
 ///         window.display();
 ///     }
-///
-///     return EXIT_SUCCESS;
 /// }
 /// \endcode
 ////////////////////////////////////////////////////////////

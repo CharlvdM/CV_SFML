@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Marco Antognini (antognini.marco@gmail.com),
+// Copyright (C) 2007-2023 Marco Antognini (antognini.marco@gmail.com),
 //                         Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
@@ -23,8 +23,7 @@
 //
 ////////////////////////////////////////////////////////////
 
-#ifndef SFML_WINDOWIMPLCOCOA_HPP
-#define SFML_WINDOWIMPLCOCOA_HPP
+#pragma once
 
 ////////////////////////////////////////////////////////////
 // Headers
@@ -91,7 +90,7 @@ public:
     /// \brief Destructor
     ///
     ////////////////////////////////////////////////////////////
-    ~WindowImplCocoa();
+    ~WindowImplCocoa() override;
 
     ////////////////////////////////////////////////////////////
     /// \brief Window Closed Event - called by the cocoa window object
@@ -240,7 +239,6 @@ public:
     ////////////////////////////////////////////////////////////
     static void setUpProcess();
 
-public:
     ////////////////////////////////////////////////////////////
     /// \brief Get the OS-specific handle of the window
     ///
@@ -296,7 +294,7 @@ public:
     /// \param pixels Pointer to the pixels in memory, format must be RGBA 32 bits
     ///
     ////////////////////////////////////////////////////////////
-    void setIcon(const Vector2u& size, const Uint8* pixels) override;
+    void setIcon(const Vector2u& size, const std::uint8_t* pixels) override;
 
     ////////////////////////////////////////////////////////////
     /// \brief Show or hide the window
@@ -364,8 +362,8 @@ private:
     ////////////////////////////////////////////////////////////
     // Member data
     ////////////////////////////////////////////////////////////
-    WindowImplDelegateRef m_delegate;   ///< Implementation in Obj-C.
-    bool                  m_showCursor; ///< Is the cursor displayed or hidden?
+    WindowImplDelegateRef m_delegate;         ///< Implementation in Obj-C.
+    bool                  m_showCursor{true}; ///< Is the cursor displayed or hidden?
 };
 
 } // namespace priv
@@ -373,5 +371,3 @@ private:
 } // namespace sf
 
 #pragma GCC diagnostic pop
-
-#endif // SFML_WINDOWIMPLCOCOA_HPP

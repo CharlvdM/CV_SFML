@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2023 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -22,8 +22,7 @@
 //
 ////////////////////////////////////////////////////////////
 
-#ifndef SFML_WINDOW_HPP
-#define SFML_WINDOW_HPP
+#pragma once
 
 ////////////////////////////////////////////////////////////
 // Headers
@@ -83,7 +82,7 @@ public:
     ////////////////////////////////////////////////////////////
     Window(VideoMode              mode,
            const String&          title,
-           Uint32                 style    = Style::Default,
+           std::uint32_t          style    = Style::Default,
            const ContextSettings& settings = ContextSettings());
 
     ////////////////////////////////////////////////////////////
@@ -122,7 +121,7 @@ public:
     /// \param style    %Window style, a bitwise OR combination of sf::Style enumerators
     ///
     ////////////////////////////////////////////////////////////
-    void create(VideoMode mode, const String& title, Uint32 style = Style::Default) override;
+    void create(VideoMode mode, const String& title, std::uint32_t style = Style::Default) override;
 
     ////////////////////////////////////////////////////////////
     /// \brief Create (or recreate) the window
@@ -141,7 +140,7 @@ public:
     /// \param settings Additional settings for the underlying OpenGL context
     ///
     ////////////////////////////////////////////////////////////
-    virtual void create(VideoMode mode, const String& title, Uint32 style, const ContextSettings& settings);
+    virtual void create(VideoMode mode, const String& title, std::uint32_t style, const ContextSettings& settings);
 
     ////////////////////////////////////////////////////////////
     /// \brief Create (or recreate) the window from an existing control
@@ -289,9 +288,6 @@ private:
 } // namespace sf
 
 
-#endif // SFML_WINDOW_HPP
-
-
 ////////////////////////////////////////////////////////////
 /// \class sf::Window
 /// \ingroup window
@@ -329,7 +325,7 @@ private:
 /// Usage example:
 /// \code
 /// // Declare and create a new window
-/// sf::Window window(sf::VideoMode(800, 600), "SFML window");
+/// sf::Window window(sf::VideoMode({800, 600}), "SFML window");
 ///
 /// // Limit the framerate to 60 frames per second (this step is optional)
 /// window.setFramerateLimit(60);

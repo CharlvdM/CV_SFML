@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2023 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -71,7 +71,7 @@ void ensureExtensionsInit(::Display* display, int screen)
 }
 
 
-int HandleXError(::Display*, XErrorEvent*)
+int handleXError(::Display*, XErrorEvent*)
 {
     glxErrorOccurred = true;
     return 0;
@@ -81,10 +81,10 @@ int HandleXError(::Display*, XErrorEvent*)
 class GlxErrorHandler
 {
 public:
-    GlxErrorHandler(::Display* display) : m_lock(glxErrorMutex), m_display(display)
+    GlxErrorHandler(::Display* display) : m_display(display)
     {
         glxErrorOccurred  = false;
-        m_previousHandler = XSetErrorHandler(HandleXError);
+        m_previousHandler = XSetErrorHandler(handleXError);
     }
 
     ~GlxErrorHandler()
@@ -94,30 +94,23 @@ public:
     }
 
 private:
-    std::scoped_lock<std::recursive_mutex> m_lock;
-    ::Display*                             m_display;
+    std::lock_guard<std::recursive_mutex> m_lock{glxErrorMutex};
+    ::Display*                            m_display;
     int (*m_previousHandler)(::Display*, XErrorEvent*);
 };
 } // namespace
 
 
-namespace sf
-{
-namespace priv
+namespace sf::priv
 {
 ////////////////////////////////////////////////////////////
-GlxContext::GlxContext(GlxContext* shared) :
-m_display(nullptr),
-m_window(0),
-m_context(nullptr),
-m_pbuffer(0),
-m_ownsWindow(false)
+GlxContext::GlxContext(GlxContext* shared)
 {
     // Save the creation settings
     m_settings = ContextSettings();
 
     // Open the connection with the X server
-    m_display = OpenDisplay();
+    m_display = openDisplay();
 
     // Make sure that extensions are initialized
     ensureExtensionsInit(m_display, DefaultScreen(m_display));
@@ -131,18 +124,13 @@ m_ownsWindow(false)
 
 
 ////////////////////////////////////////////////////////////
-GlxContext::GlxContext(GlxContext* shared, const ContextSettings& settings, const WindowImpl& owner, unsigned int /*bitsPerPixel*/) :
-m_display(nullptr),
-m_window(0),
-m_context(nullptr),
-m_pbuffer(0),
-m_ownsWindow(false)
+GlxContext::GlxContext(GlxContext* shared, const ContextSettings& settings, const WindowImpl& owner, unsigned int /*bitsPerPixel*/)
 {
     // Save the creation settings
     m_settings = settings;
 
     // Open the connection with the X server
-    m_display = OpenDisplay();
+    m_display = openDisplay();
 
     // Make sure that extensions are initialized
     ensureExtensionsInit(m_display, DefaultScreen(m_display));
@@ -156,18 +144,13 @@ m_ownsWindow(false)
 
 
 ////////////////////////////////////////////////////////////
-GlxContext::GlxContext(GlxContext* shared, const ContextSettings& settings, const Vector2u& size) :
-m_display(nullptr),
-m_window(0),
-m_context(nullptr),
-m_pbuffer(0),
-m_ownsWindow(false)
+GlxContext::GlxContext(GlxContext* shared, const ContextSettings& settings, const Vector2u& size)
 {
     // Save the creation settings
     m_settings = settings;
 
     // Open the connection with the X server
-    m_display = OpenDisplay();
+    m_display = openDisplay();
 
     // Make sure that extensions are initialized
     ensureExtensionsInit(m_display, DefaultScreen(m_display));
@@ -216,7 +199,7 @@ GlxContext::~GlxContext()
     }
 
     // Close the connection with the X server
-    CloseDisplay(m_display);
+    closeDisplay(m_display);
 }
 
 
@@ -350,7 +333,15 @@ XVisualInfo GlxContext::selectBestVisual(::Display* display, unsigned int bitsPe
                 continue;
 
             // Extract the components of the current visual
-            int red, green, blue, alpha, depth, stencil, multiSampling, samples, sRgb;
+            int red;
+            int green;
+            int blue;
+            int alpha;
+            int depth;
+            int stencil;
+            int multiSampling;
+            int samples;
+            int sRgb;
             glXGetConfig(display, &visuals[i], GLX_RED_SIZE, &red);
             glXGetConfig(display, &visuals[i], GLX_GREEN_SIZE, &green);
             glXGetConfig(display, &visuals[i], GLX_BLUE_SIZE, &blue);
@@ -419,7 +410,11 @@ XVisualInfo GlxContext::selectBestVisual(::Display* display, unsigned int bitsPe
 void GlxContext::updateSettingsFromVisualInfo(XVisualInfo* visualInfo)
 {
     // Update the creation settings from the chosen format
-    int depth, stencil, multiSampling, samples, sRgb;
+    int depth;
+    int stencil;
+    int multiSampling;
+    int samples;
+    int sRgb;
     glXGetConfig(m_display, visualInfo, GLX_DEPTH_SIZE, &depth);
     glXGetConfig(m_display, visualInfo, GLX_STENCIL_SIZE, &stencil);
 
@@ -799,6 +794,4 @@ void GlxContext::createContext(GlxContext* shared)
     XFree(visualInfo);
 }
 
-} // namespace priv
-
-} // namespace sf
+} // namespace sf::priv

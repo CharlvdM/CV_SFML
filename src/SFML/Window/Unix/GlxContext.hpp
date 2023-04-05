@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2023 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -22,8 +22,7 @@
 //
 ////////////////////////////////////////////////////////////
 
-#ifndef SFML_GLXCONTEXT_HPP
-#define SFML_GLXCONTEXT_HPP
+#pragma once
 
 ////////////////////////////////////////////////////////////
 // Headers
@@ -35,9 +34,7 @@
 #include <glad/glx.h>
 
 
-namespace sf
-{
-namespace priv
+namespace sf::priv
 {
 ////////////////////////////////////////////////////////////
 /// \brief Linux (GLX) implementation of OpenGL contexts
@@ -79,7 +76,7 @@ public:
     /// \brief Destructor
     ///
     ////////////////////////////////////////////////////////////
-    ~GlxContext();
+    ~GlxContext() override;
 
     ////////////////////////////////////////////////////////////
     /// \brief Get the address of an OpenGL function
@@ -176,15 +173,11 @@ private:
     ////////////////////////////////////////////////////////////
     // Member data
     ////////////////////////////////////////////////////////////
-    ::Display* m_display;    ///< Connection to the X server
-    ::Window   m_window;     ///< Window to which the context is attached
-    GLXContext m_context;    ///< OpenGL context
-    GLXPbuffer m_pbuffer;    ///< GLX pbuffer ID if one was created
-    bool       m_ownsWindow; ///< Do we own the window associated to the context?
+    ::Display* m_display{};    ///< Connection to the X server
+    ::Window   m_window{};     ///< Window to which the context is attached
+    GLXContext m_context{};    ///< OpenGL context
+    GLXPbuffer m_pbuffer{};    ///< GLX pbuffer ID if one was created
+    bool       m_ownsWindow{}; ///< Do we own the window associated to the context?
 };
 
-} // namespace priv
-
-} // namespace sf
-
-#endif // SFML_GLXCONTEXT_HPP
+} // namespace sf::priv

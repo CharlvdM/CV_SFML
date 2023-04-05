@@ -1,5 +1,4 @@
-#ifndef EFFECT_HPP
-#define EFFECT_HPP
+#pragma once
 
 ////////////////////////////////////////////////////////////
 // Headers
@@ -16,9 +15,7 @@
 class Effect : public sf::Drawable
 {
 public:
-    ~Effect() override
-    {
-    }
+    ~Effect() override = default;
 
     static void setFont(const sf::Font& font)
     {
@@ -49,7 +46,7 @@ public:
         }
         else
         {
-            sf::Text error("Shader not\nsupported", getFont());
+            sf::Text error(getFont(), "Shader not\nsupported");
             error.setPosition({320.f, 200.f});
             error.setCharacterSize(36);
             target.draw(error, states);
@@ -57,7 +54,7 @@ public:
     }
 
 protected:
-    Effect(const std::string& name) : m_name(name), m_isLoaded(false)
+    Effect(const std::string& name) : m_name(name)
     {
     }
 
@@ -73,11 +70,9 @@ private:
     virtual void onUpdate(float time, float x, float y)                                 = 0;
     virtual void onDraw(sf::RenderTarget& target, const sf::RenderStates& states) const = 0;
 
-private:
     std::string m_name;
-    bool        m_isLoaded;
+    bool        m_isLoaded{};
 
+    // NOLINTNEXTLINE(readability-identifier-naming)
     static const sf::Font* s_font;
 };
-
-#endif // EFFECT_HPP

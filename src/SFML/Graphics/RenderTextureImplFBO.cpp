@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2023 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -45,7 +45,7 @@ namespace
 // Set to track all active FBO mappings
 // This is used to free active FBOs while their owning
 // RenderTextureImplFBO is still alive
-std::unordered_set<std::unordered_map<sf::Uint64, unsigned int>*> frameBuffers;
+std::unordered_set<std::unordered_map<std::uint64_t, unsigned int>*> frameBuffers;
 
 // Set to track all stale FBOs
 // This is used to free stale FBOs after their owning
@@ -53,7 +53,7 @@ std::unordered_set<std::unordered_map<sf::Uint64, unsigned int>*> frameBuffers;
 // An FBO cannot be destroyed until it's containing context
 // becomes active, so the destruction of the RenderTextureImplFBO
 // has to be decoupled from the destruction of the FBOs themselves
-std::set<std::pair<sf::Uint64, unsigned int>> staleFrameBuffers;
+std::set<std::pair<std::uint64_t, unsigned int>> staleFrameBuffers;
 
 // Mutex to protect both active and stale frame buffer sets
 std::recursive_mutex mutex;
@@ -63,7 +63,7 @@ std::recursive_mutex mutex;
 // might trigger deletion of its contained stale FBOs
 void destroyStaleFBOs()
 {
-    sf::Uint64 contextId = sf::Context::getActiveContextId();
+    std::uint64_t contextId = sf::Context::getActiveContextId();
 
     for (auto it = staleFrameBuffers.begin(); it != staleFrameBuffers.end();)
     {
@@ -84,9 +84,9 @@ void destroyStaleFBOs()
 // Callback that is called every time a context is destroyed
 void contextDestroyCallback(void* /*arg*/)
 {
-    std::scoped_lock lock(mutex);
+    std::lock_guard lock(mutex);
 
-    sf::Uint64 contextId = sf::Context::getActiveContextId();
+    std::uint64_t contextId = sf::Context::getActiveContextId();
 
     // Destroy active frame buffer objects
     for (auto* frameBuffer : frameBuffers)
@@ -112,22 +112,12 @@ void contextDestroyCallback(void* /*arg*/)
 } // namespace
 
 
-namespace sf
-{
-namespace priv
+namespace sf::priv
 {
 ////////////////////////////////////////////////////////////
-RenderTextureImplFBO::RenderTextureImplFBO() :
-m_depthStencilBuffer(0),
-m_colorBuffer(0),
-m_size(0, 0),
-m_context(),
-m_textureId(0),
-m_multisample(false),
-m_stencil(false),
-m_sRgb(false)
+RenderTextureImplFBO::RenderTextureImplFBO()
 {
-    std::scoped_lock lock(mutex);
+    std::lock_guard lock(mutex);
 
     // Register the context destruction callback
     registerContextDestroyCallback(contextDestroyCallback, nullptr);
@@ -143,7 +133,7 @@ RenderTextureImplFBO::~RenderTextureImplFBO()
 {
     TransientContextLock contextLock;
 
-    std::scoped_lock lock(mutex);
+    std::lock_guard lock(mutex);
 
     // Remove the frame buffer mapping from the set of all active mappings
     frameBuffers.erase(&m_frameBuffers);
@@ -273,15 +263,17 @@ bool RenderTextureImplFBO::create(const Vector2u& size, unsigned int textureId, 
                                                     static_cast<GLsizei>(size.x),
                                                     static_cast<GLsizei>(size.y)));
 
+                m_stencil = true;
+
 #else
+
+                m_stencil = false;
 
                 err() << "Impossible to create render texture (failed to create the attached depth/stencil buffer)"
                       << std::endl;
                 return false;
 
 #endif // SFML_OPENGL_ES
-
-                m_stencil = true;
             }
             else if (settings.depthBits)
             {
@@ -365,14 +357,16 @@ bool RenderTextureImplFBO::create(const Vector2u& size, unsigned int textureId, 
                                                                static_cast<GLsizei>(size.y)));
             }
 
+            m_multisample = true;
+
 #else
+
+            m_multisample = false;
 
             err() << "Impossible to create render texture (failed to create the multisample render buffers)" << std::endl;
             return false;
 
 #endif // SFML_OPENGL_ES
-
-            m_multisample = true;
         }
     }
 
@@ -472,7 +466,7 @@ bool RenderTextureImplFBO::createFrameBuffer()
     }
 
     {
-        std::scoped_lock lock(mutex);
+        std::lock_guard lock(mutex);
 
         // Insert the FBO into our map
         m_frameBuffers.emplace(Context::getActiveContextId(), frameBuffer);
@@ -529,7 +523,7 @@ bool RenderTextureImplFBO::createFrameBuffer()
         }
 
         {
-            std::scoped_lock lock(mutex);
+            std::lock_guard lock(mutex);
 
             // Insert the FBO into our map
             m_multisampleFrameBuffers.emplace(Context::getActiveContextId(), multisampleFrameBuffer);
@@ -552,7 +546,7 @@ bool RenderTextureImplFBO::activate(bool active)
         return true;
     }
 
-    Uint64 contextId = Context::getActiveContextId();
+    std::uint64_t contextId = Context::getActiveContextId();
 
     // In the odd case we have to activate and there is no active
     // context yet, we have to create one
@@ -580,9 +574,9 @@ bool RenderTextureImplFBO::activate(bool active)
     // If none is found, there is no FBO corresponding to the
     // currently active context so we will have to create a new FBO
     {
-        std::scoped_lock lock(mutex);
+        std::lock_guard lock(mutex);
 
-        std::unordered_map<Uint64, unsigned int>::iterator it;
+        std::unordered_map<std::uint64_t, unsigned int>::iterator it;
 
         if (m_multisample)
         {
@@ -632,9 +626,9 @@ void RenderTextureImplFBO::updateTexture(unsigned int)
     // are already available within the current context
     if (m_multisample && m_size.x && m_size.y && activate(true))
     {
-        Uint64 contextId = Context::getActiveContextId();
+        std::uint64_t contextId = Context::getActiveContextId();
 
-        std::scoped_lock lock(mutex);
+        std::lock_guard lock(mutex);
 
         auto frameBufferIt = m_frameBuffers.find(contextId);
         auto multisampleIt = m_multisampleFrameBuffers.find(contextId);
@@ -660,6 +654,4 @@ void RenderTextureImplFBO::updateTexture(unsigned int)
 #endif // SFML_OPENGL_ES
 }
 
-} // namespace priv
-
-} // namespace sf
+} // namespace sf::priv

@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2023 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -22,8 +22,7 @@
 //
 ////////////////////////////////////////////////////////////
 
-#ifndef SFML_WINDOWIMPLUIKIT_HPP
-#define SFML_WINDOWIMPLUIKIT_HPP
+#pragma once
 
 ////////////////////////////////////////////////////////////
 // Headers
@@ -38,9 +37,7 @@ SFML_DECLARE_OBJC_CLASS(SFView);
 SFML_DECLARE_OBJC_CLASS(SFViewController);
 
 
-namespace sf
-{
-namespace priv
+namespace sf::priv
 {
 ////////////////////////////////////////////////////////////
 /// \brief iOS (UIKit) implementation of WindowImpl
@@ -67,12 +64,6 @@ public:
     ///
     ////////////////////////////////////////////////////////////
     WindowImplUIKit(VideoMode mode, const String& title, unsigned long style, const ContextSettings& settings);
-
-    ////////////////////////////////////////////////////////////
-    /// \brief Destructor
-    ///
-    ////////////////////////////////////////////////////////////
-    ~WindowImplUIKit();
 
     ////////////////////////////////////////////////////////////
     /// \brief Get the OS-specific handle of the window
@@ -129,7 +120,7 @@ public:
     /// \param pixels Pointer to the pixels in memory, format must be RGBA 32 bits
     ///
     ////////////////////////////////////////////////////////////
-    void setIcon(const Vector2u& size, const Uint8* pixels) override;
+    void setIcon(const Vector2u& size, const std::uint8_t* pixels) override;
 
     ////////////////////////////////////////////////////////////
     /// \brief Show or hide the window
@@ -229,9 +220,4 @@ private:
     float             m_backingScale;   ///< Converts from points to pixels and vice versa
 };
 
-} // namespace priv
-
-} // namespace sf
-
-
-#endif // SFML_WINDOWIMPLUIKIT_HPP
+} // namespace sf::priv

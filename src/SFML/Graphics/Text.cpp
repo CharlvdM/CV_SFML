@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2023 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -100,41 +100,10 @@ void addGlyphQuad(sf::VertexArray& vertices, sf::Vector2f position, const sf::Co
 namespace sf
 {
 ////////////////////////////////////////////////////////////
-Text::Text() :
-m_string(),
-m_font(nullptr),
-m_characterSize(30),
-m_letterSpacingFactor(1.f),
-m_lineSpacingFactor(1.f),
-m_style(Regular),
-m_fillColor(255, 255, 255),
-m_outlineColor(0, 0, 0),
-m_outlineThickness(0),
-m_vertices(Triangles),
-m_outlineVertices(Triangles),
-m_bounds(),
-m_geometryNeedUpdate(false),
-m_fontTextureId(0)
-{
-}
-
-
-////////////////////////////////////////////////////////////
-Text::Text(const String& string, const Font& font, unsigned int characterSize) :
+Text::Text(const Font& font, const String& string, unsigned int characterSize) :
 m_string(string),
 m_font(&font),
-m_characterSize(characterSize),
-m_letterSpacingFactor(1.f),
-m_lineSpacingFactor(1.f),
-m_style(Regular),
-m_fillColor(255, 255, 255),
-m_outlineColor(0, 0, 0),
-m_outlineThickness(0),
-m_vertices(Triangles),
-m_outlineVertices(Triangles),
-m_bounds(),
-m_geometryNeedUpdate(true),
-m_fontTextureId(0)
+m_characterSize(characterSize)
 {
 }
 
@@ -211,7 +180,7 @@ void Text::setLineSpacing(float spacingFactor)
 
 
 ////////////////////////////////////////////////////////////
-void Text::setStyle(Uint32 style)
+void Text::setStyle(std::uint32_t style)
 {
     if (m_style != style)
     {
@@ -304,7 +273,7 @@ float Text::getLineSpacing() const
 
 
 ////////////////////////////////////////////////////////////
-Uint32 Text::getStyle() const
+std::uint32_t Text::getStyle() const
 {
     return m_style;
 }
@@ -334,10 +303,6 @@ float Text::getOutlineThickness() const
 ////////////////////////////////////////////////////////////
 Vector2f Text::findCharacterPos(std::size_t index) const
 {
-    // Make sure that we have a valid font
-    if (!m_font)
-        return Vector2f();
-
     // Adjust the index if it's out of range
     if (index > m_string.getSize())
         index = m_string.getSize();
@@ -350,11 +315,11 @@ Vector2f Text::findCharacterPos(std::size_t index) const
     float lineSpacing = m_font->getLineSpacing(m_characterSize) * m_lineSpacingFactor;
 
     // Compute the position
-    Vector2f position;
-    Uint32   prevChar = 0;
+    Vector2f      position;
+    std::uint32_t prevChar = 0;
     for (std::size_t i = 0; i < index; ++i)
     {
-        Uint32 curChar = m_string[i];
+        std::uint32_t curChar = m_string[i];
 
         // Apply the kerning offset
         position.x += m_font->getKerning(prevChar, curChar, m_characterSize, isBold);
@@ -405,30 +370,24 @@ FloatRect Text::getGlobalBounds() const
 ////////////////////////////////////////////////////////////
 void Text::draw(RenderTarget& target, const RenderStates& states) const
 {
-    if (m_font)
-    {
-        ensureGeometryUpdate();
+    ensureGeometryUpdate();
 
-        RenderStates statesCopy(states);
+    RenderStates statesCopy(states);
 
-        statesCopy.transform *= getTransform();
-        statesCopy.texture = &m_font->getTexture(m_characterSize);
+    statesCopy.transform *= getTransform();
+    statesCopy.texture = &m_font->getTexture(m_characterSize);
 
-        // Only draw the outline if there is something to draw
-        if (m_outlineThickness != 0)
-            target.draw(m_outlineVertices, statesCopy);
+    // Only draw the outline if there is something to draw
+    if (m_outlineThickness != 0)
+        target.draw(m_outlineVertices, statesCopy);
 
-        target.draw(m_vertices, statesCopy);
-    }
+    target.draw(m_vertices, statesCopy);
 }
 
 
 ////////////////////////////////////////////////////////////
 void Text::ensureGeometryUpdate() const
 {
-    if (!m_font)
-        return;
-
     // Do nothing, if geometry has not changed and the font texture has not changed
     if (!m_geometryNeedUpdate && m_font->getTexture(m_characterSize).m_cacheId == m_fontTextureId)
         return;
@@ -471,14 +430,14 @@ void Text::ensureGeometryUpdate() const
     auto  y           = static_cast<float>(m_characterSize);
 
     // Create one quad for each character
-    auto   minX     = static_cast<float>(m_characterSize);
-    auto   minY     = static_cast<float>(m_characterSize);
-    float  maxX     = 0.f;
-    float  maxY     = 0.f;
-    Uint32 prevChar = 0;
+    auto          minX     = static_cast<float>(m_characterSize);
+    auto          minY     = static_cast<float>(m_characterSize);
+    float         maxX     = 0.f;
+    float         maxY     = 0.f;
+    std::uint32_t prevChar = 0;
     for (std::size_t i = 0; i < m_string.getSize(); ++i)
     {
-        Uint32 curChar = m_string[i];
+        std::uint32_t curChar = m_string[i];
 
         // Skip the \r char to avoid weird graphical issues
         if (curChar == U'\r')
@@ -541,19 +500,8 @@ void Text::ensureGeometryUpdate() const
         {
             const Glyph& glyph = m_font->getGlyph(curChar, m_characterSize, isBold, m_outlineThickness);
 
-            float left   = glyph.bounds.left;
-            float top    = glyph.bounds.top;
-            float right  = glyph.bounds.left + glyph.bounds.width;
-            float bottom = glyph.bounds.top + glyph.bounds.height;
-
             // Add the outline glyph to the vertices
             addGlyphQuad(m_outlineVertices, Vector2f(x, y), m_outlineColor, glyph, italicShear);
-
-            // Update the current bounds with the outlined glyph bounds
-            minX = std::min(minX, x + left - italicShear * bottom);
-            maxX = std::max(maxX, x + right - italicShear * top);
-            minY = std::min(minY, y + top);
-            maxY = std::max(maxY, y + bottom);
         }
 
         // Extract the current glyph's description
@@ -562,22 +510,29 @@ void Text::ensureGeometryUpdate() const
         // Add the glyph to the vertices
         addGlyphQuad(m_vertices, Vector2f(x, y), m_fillColor, glyph, italicShear);
 
-        // Update the current bounds with the non outlined glyph bounds
-        if (m_outlineThickness == 0)
-        {
-            float left   = glyph.bounds.left;
-            float top    = glyph.bounds.top;
-            float right  = glyph.bounds.left + glyph.bounds.width;
-            float bottom = glyph.bounds.top + glyph.bounds.height;
+        // Update the current bounds
+        float left   = glyph.bounds.left;
+        float top    = glyph.bounds.top;
+        float right  = glyph.bounds.left + glyph.bounds.width;
+        float bottom = glyph.bounds.top + glyph.bounds.height;
 
-            minX = std::min(minX, x + left - italicShear * bottom);
-            maxX = std::max(maxX, x + right - italicShear * top);
-            minY = std::min(minY, y + top);
-            maxY = std::max(maxY, y + bottom);
-        }
+        minX = std::min(minX, x + left - italicShear * bottom);
+        maxX = std::max(maxX, x + right - italicShear * top);
+        minY = std::min(minY, y + top);
+        maxY = std::max(maxY, y + bottom);
 
         // Advance to the next character
         x += glyph.advance + letterSpacing;
+    }
+
+    // If we're using outline, update the current bounds
+    if (m_outlineThickness != 0)
+    {
+        float outline = std::abs(std::ceil(m_outlineThickness));
+        minX -= outline;
+        maxX += outline;
+        minY -= outline;
+        maxY += outline;
     }
 
     // If we're using the underlined style, add the last line

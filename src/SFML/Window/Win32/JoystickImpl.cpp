@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2023 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -31,6 +31,7 @@
 #include <SFML/System/Win32/WindowsHeader.hpp>
 #include <SFML/Window/JoystickImpl.hpp>
 
+#include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <iomanip>
@@ -56,6 +57,7 @@ namespace
 {
 namespace guids
 {
+// NOLINTBEGIN(readability-identifier-naming)
 const GUID IID_IDirectInput8W = {0xbf798031, 0x483a, 0x4da2, {0xaa, 0x99, 0x5d, 0x64, 0xed, 0x36, 0x97, 0x00}};
 
 const GUID GUID_XAxis  = {0xa36d02e0, 0xc9f3, 0x11cf, {0xbf, 0xc7, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00}};
@@ -68,6 +70,7 @@ const GUID GUID_POV = {0xa36d02f2, 0xc9f3, 0x11cf, {0xbf, 0xc7, 0x44, 0x45, 0x53
 
 const GUID GUID_RxAxis = {0xa36d02f4, 0xc9f3, 0x11cf, {0xbf, 0xc7, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00}};
 const GUID GUID_RyAxis = {0xa36d02f5, 0xc9f3, 0x11cf, {0xbf, 0xc7, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00}};
+// NOLINTEND(readability-identifier-naming)
 } // namespace guids
 
 HMODULE         dinput8dll  = nullptr;
@@ -103,10 +106,7 @@ namespace
 {
 struct ConnectionCache
 {
-    ConnectionCache() : connected(false)
-    {
-    }
-    bool      connected;
+    bool      connected{};
     sf::Clock timer;
 };
 const sf::Time connectionRefreshDelay = sf::milliseconds(500);
@@ -220,9 +220,7 @@ sf::String getDeviceName(unsigned int index, JOYCAPS caps)
 }
 } // namespace
 
-namespace sf
-{
-namespace priv
+namespace sf::priv
 {
 ////////////////////////////////////////////////////////////
 void JoystickImpl::initialize()
@@ -476,13 +474,9 @@ void JoystickImpl::cleanupDInput()
 bool JoystickImpl::isConnectedDInput(unsigned int index)
 {
     // Check if a joystick with the given index is in the connected list
-    for (const JoystickRecord& record : joystickList)
-    {
-        if (record.index == index)
-            return true;
-    }
-
-    return false;
+    return std::any_of(joystickList.cbegin(),
+                       joystickList.cend(),
+                       [index](const JoystickRecord& record) { return record.index == index; });
 }
 
 
@@ -545,7 +539,7 @@ bool JoystickImpl::openDInput(unsigned int index)
     for (int& button : m_buttons)
         button = -1;
 
-    std::memset(&m_deviceCaps, 0, sizeof(DIDEVCAPS));
+    m_deviceCaps        = {};
     m_deviceCaps.dwSize = sizeof(DIDEVCAPS);
     m_state             = JoystickState();
     m_buffered          = false;
@@ -566,8 +560,7 @@ bool JoystickImpl::openDInput(unsigned int index)
             }
 
             // Get vendor and product id of the device
-            DIPROPDWORD property;
-            std::memset(&property, 0, sizeof(property));
+            auto property              = DIPROPDWORD();
             property.diph.dwSize       = sizeof(property);
             property.diph.dwHeaderSize = sizeof(property.diph);
             property.diph.dwHow        = DIPH_DEVICE;
@@ -596,8 +589,7 @@ bool JoystickImpl::openDInput(unsigned int index)
             }
 
             // Get friendly product name of the device
-            DIPROPSTRING stringProperty;
-            std::memset(&stringProperty, 0, sizeof(stringProperty));
+            auto stringProperty              = DIPROPSTRING();
             stringProperty.diph.dwSize       = sizeof(stringProperty);
             stringProperty.diph.dwHeaderSize = sizeof(stringProperty.diph);
             stringProperty.diph.dwHow        = DIPH_DEVICE;
@@ -676,7 +668,7 @@ bool JoystickImpl::openDInput(unsigned int index)
                     data[8 * 4 + i].dwFlags = 0;
                 }
 
-                for (int i = 0; i < sf::Joystick::ButtonCount; ++i)
+                for (unsigned int i = 0; i < sf::Joystick::ButtonCount; ++i)
                 {
                     data[8 * 4 + 4 + i].pguid   = nullptr;
                     data[8 * 4 + 4 + i].dwOfs   = static_cast<DWORD>(DIJOFS_BUTTON(i));
@@ -740,7 +732,7 @@ bool JoystickImpl::openDInput(unsigned int index)
             {
                 if (axis != -1)
                 {
-                    std::memset(&property, 0, sizeof(property));
+                    property                   = {};
                     property.diph.dwSize       = sizeof(property);
                     property.diph.dwHeaderSize = sizeof(property.diph);
                     property.diph.dwHow        = DIPH_DEVICE;
@@ -763,7 +755,7 @@ bool JoystickImpl::openDInput(unsigned int index)
                     if (property.dwData == DIPROPAXISMODE_ABS)
                         break;
 
-                    std::memset(&property, 0, sizeof(property));
+                    property                   = {};
                     property.diph.dwSize       = sizeof(property);
                     property.diph.dwHeaderSize = sizeof(property.diph);
                     property.diph.dwHow        = DIPH_DEVICE;
@@ -772,7 +764,7 @@ bool JoystickImpl::openDInput(unsigned int index)
                     m_device->SetProperty(DIPROP_AXISMODE, &property.diph);
 
                     // Check if the axis mode has been set to absolute
-                    std::memset(&property, 0, sizeof(property));
+                    property                   = {};
                     property.diph.dwSize       = sizeof(property);
                     property.diph.dwHeaderSize = sizeof(property.diph);
                     property.diph.dwHow        = DIPH_DEVICE;
@@ -816,7 +808,7 @@ bool JoystickImpl::openDInput(unsigned int index)
             }
 
             // Try to enable buffering by setting the buffer size
-            std::memset(&property, 0, sizeof(property));
+            property                   = {};
             property.diph.dwSize       = sizeof(property);
             property.diph.dwHeaderSize = sizeof(property.diph);
             property.diph.dwHow        = DIPH_DEVICE;
@@ -880,7 +872,7 @@ JoystickCaps JoystickImpl::getCapabilitiesDInput() const
     }
 
     // Check which axes have valid offsets
-    for (int i = 0; i < Joystick::AxisCount; ++i)
+    for (unsigned int i = 0; i < Joystick::AxisCount; ++i)
         caps.axes[i] = (m_axes[i] != -1);
 
     return caps;
@@ -931,7 +923,7 @@ JoystickState JoystickImpl::updateDInputBuffered()
         bool eventHandled = false;
 
         // Get the current state of each axis
-        for (int j = 0; j < Joystick::AxisCount; ++j)
+        for (unsigned int j = 0; j < Joystick::AxisCount; ++j)
         {
             if (m_axes[j] == static_cast<int>(events[i].dwOfs))
             {
@@ -967,7 +959,7 @@ JoystickState JoystickImpl::updateDInputBuffered()
             continue;
 
         // Get the current state of each button
-        for (int j = 0; j < Joystick::ButtonCount; ++j)
+        for (unsigned int j = 0; j < Joystick::ButtonCount; ++j)
         {
             if (m_buttons[j] == static_cast<int>(events[i].dwOfs))
                 m_state.buttons[j] = (events[i].dwData != 0);
@@ -1020,7 +1012,7 @@ JoystickState JoystickImpl::updateDInputPolled()
         }
 
         // Get the current state of each axis
-        for (int i = 0; i < Joystick::AxisCount; ++i)
+        for (unsigned int i = 0; i < Joystick::AxisCount; ++i)
         {
             if (m_axes[i] != -1)
             {
@@ -1057,7 +1049,7 @@ JoystickState JoystickImpl::updateDInputPolled()
         }
 
         // Get the current state of each button
-        for (int i = 0; i < Joystick::ButtonCount; ++i)
+        for (unsigned int i = 0; i < Joystick::ButtonCount; ++i)
         {
             if (m_buttons[i] != -1)
             {
@@ -1129,9 +1121,7 @@ BOOL CALLBACK JoystickImpl::deviceObjectEnumerationCallback(const DIDEVICEOBJECT
             return DIENUM_CONTINUE;
 
         // Set the axis' value range to that of a signed short: [-32768, 32767]
-        DIPROPRANGE propertyRange;
-
-        std::memset(&propertyRange, 0, sizeof(propertyRange));
+        auto propertyRange              = DIPROPRANGE();
         propertyRange.diph.dwSize       = sizeof(propertyRange);
         propertyRange.diph.dwHeaderSize = sizeof(propertyRange.diph);
         propertyRange.diph.dwObj        = deviceObjectInstance->dwType;
@@ -1163,11 +1153,11 @@ BOOL CALLBACK JoystickImpl::deviceObjectEnumerationCallback(const DIDEVICEOBJECT
     else if (DIDFT_GETTYPE(deviceObjectInstance->dwType) & DIDFT_BUTTON)
     {
         // Buttons
-        for (int i = 0; i < Joystick::ButtonCount; ++i)
+        for (unsigned int i = 0; i < Joystick::ButtonCount; ++i)
         {
             if (joystick.m_buttons[i] == -1)
             {
-                joystick.m_buttons[i] = DIJOFS_BUTTON(i);
+                joystick.m_buttons[i] = DIJOFS_BUTTON(static_cast<int>(i));
                 break;
             }
         }
@@ -1178,6 +1168,4 @@ BOOL CALLBACK JoystickImpl::deviceObjectEnumerationCallback(const DIDEVICEOBJECT
     return DIENUM_CONTINUE;
 }
 
-} // namespace priv
-
-} // namespace sf
+} // namespace sf::priv

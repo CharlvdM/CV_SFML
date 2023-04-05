@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2020 Andrew Mickelson
+// Copyright (C) 2023 Andrew Mickelson
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -32,15 +32,11 @@
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/WindowStyle.hpp>
 
-#include <drm-common.h>
 
-
-namespace sf
-{
-namespace priv
+namespace sf::priv
 {
 ////////////////////////////////////////////////////////////
-WindowImplDRM::WindowImplDRM(WindowHandle /*handle*/) : m_size(0, 0)
+WindowImplDRM::WindowImplDRM(WindowHandle /*handle*/)
 {
     sf::priv::InputImpl::setTerminalConfig();
 }
@@ -64,8 +60,8 @@ WindowImplDRM::~WindowImplDRM()
 ////////////////////////////////////////////////////////////
 WindowHandle WindowImplDRM::getSystemHandle() const
 {
-    drm* drm = sf::priv::DRMContext::getDRM();
-    return static_cast<WindowHandle>(drm->fd);
+    Drm& drm = sf::priv::DRMContext::getDRM();
+    return static_cast<WindowHandle>(drm.fileDescriptor);
 }
 
 ////////////////////////////////////////////////////////////
@@ -101,7 +97,7 @@ void WindowImplDRM::setTitle(const String& /*title*/)
 
 
 ////////////////////////////////////////////////////////////
-void WindowImplDRM::setIcon(const Vector2u& /*size*/, const Uint8* /*pixels*/)
+void WindowImplDRM::setIcon(const Vector2u& /*size*/, const std::uint8_t* /*pixels*/)
 {
 }
 
@@ -156,6 +152,4 @@ void WindowImplDRM::processEvents()
         pushEvent(ev);
 }
 
-} // namespace priv
-
-} // namespace sf
+} // namespace sf::priv

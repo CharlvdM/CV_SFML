@@ -22,8 +22,7 @@
 //
 ////////////////////////////////////////////////////////////
 
-#ifndef SFML_ACTIVITY_HPP
-#define SFML_ACTIVITY_HPP
+#pragma once
 
 ////////////////////////////////////////////////////////////
 // Headers
@@ -51,9 +50,7 @@ private:
     std::string m_message;
 };
 
-namespace sf
-{
-namespace priv
+namespace sf::priv
 {
 struct ActivityStates
 {
@@ -67,8 +64,8 @@ struct ActivityStates
     EGLDisplay  display;
     EglContext* context;
 
-    void*  savedState;
-    size_t savedStateSize;
+    void*       savedState;
+    std::size_t savedStateSize;
 
     std::recursive_mutex mutex;
 
@@ -99,8 +96,4 @@ SFML_SYSTEM_API void resetActivity(ActivityStates* initializedStates);
 
 SFML_SYSTEM_API ActivityStates& getActivity();
 
-} // namespace priv
-} // namespace sf
-
-
-#endif // SFML_ACTIVITY_HPP
+} // namespace sf::priv

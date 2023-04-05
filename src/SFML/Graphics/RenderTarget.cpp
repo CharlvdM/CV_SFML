@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2023 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -53,33 +53,30 @@ std::recursive_mutex mutex;
 
 // Unique identifier, used for identifying RenderTargets when
 // tracking the currently active RenderTarget within a given context
-sf::Uint64 getUniqueId()
+std::uint64_t getUniqueId()
 {
-    std::scoped_lock lock(mutex);
+    std::lock_guard lock(mutex);
 
-    static sf::Uint64 id = 1; // start at 1, zero is "no RenderTarget"
+    static std::uint64_t id = 1; // start at 1, zero is "no RenderTarget"
 
     return id++;
 }
 
 // Map to help us detect whether a different RenderTarget
 // has been activated within a single context
-using ContextRenderTargetMap = std::unordered_map<sf::Uint64, sf::Uint64>;
+using ContextRenderTargetMap = std::unordered_map<std::uint64_t, std::uint64_t>;
 ContextRenderTargetMap contextRenderTargetMap;
 
 // Check if a RenderTarget with the given ID is active in the current context
-bool isActive(sf::Uint64 id)
+bool isActive(std::uint64_t id)
 {
     auto it = contextRenderTargetMap.find(sf::Context::getActiveContextId());
 
-    if ((it == contextRenderTargetMap.end()) || (it->second != id))
-        return false;
-
-    return true;
+    return (it != contextRenderTargetMap.end()) && (it->second == id);
 }
 
 // Convert an sf::BlendMode::Factor constant to the corresponding OpenGL constant.
-sf::Uint32 factorToGlConstant(sf::BlendMode::Factor blendFactor)
+std::uint32_t factorToGlConstant(sf::BlendMode::Factor blendFactor)
 {
     // clang-format off
     switch (blendFactor)
@@ -104,7 +101,7 @@ sf::Uint32 factorToGlConstant(sf::BlendMode::Factor blendFactor)
 
 
 // Convert an sf::BlendMode::BlendEquation constant to the corresponding OpenGL constant.
-sf::Uint32 equationToGlConstant(sf::BlendMode::Equation blendEquation)
+std::uint32_t equationToGlConstant(sf::BlendMode::Equation blendEquation)
 {
     switch (blendEquation)
     {
@@ -147,10 +144,7 @@ sf::Uint32 equationToGlConstant(sf::BlendMode::Equation blendEquation)
 namespace sf
 {
 ////////////////////////////////////////////////////////////
-RenderTarget::RenderTarget() : m_defaultView(), m_view(), m_cache(), m_id(0)
-{
-    m_cache.glStatesSet = false;
-}
+RenderTarget::RenderTarget() = default;
 
 
 ////////////////////////////////////////////////////////////
@@ -196,9 +190,8 @@ const View& RenderTarget::getDefaultView() const
 ////////////////////////////////////////////////////////////
 IntRect RenderTarget::getViewport(const View& view) const
 {
-    float            width    = static_cast<float>(getSize().x);
-    float            height   = static_cast<float>(getSize().y);
-    const FloatRect& viewport = view.getViewport();
+    const auto [width, height] = Vector2f(getSize());
+    const FloatRect& viewport  = view.getViewport();
 
     return IntRect({static_cast<int>(0.5f + width * viewport.left), static_cast<int>(0.5f + height * viewport.top)},
                    {static_cast<int>(0.5f + width * viewport.width), static_cast<int>(0.5f + height * viewport.height)});
@@ -395,9 +388,9 @@ bool RenderTarget::setActive(bool active)
 {
     // Mark this RenderTarget as active or no longer active in the tracking map
     {
-        std::scoped_lock lock(RenderTargetImpl::mutex);
+        std::lock_guard lock(RenderTargetImpl::mutex);
 
-        Uint64 contextId = Context::getActiveContextId();
+        std::uint64_t contextId = Context::getActiveContextId();
 
         using RenderTargetImpl::contextRenderTargetMap;
         auto it = contextRenderTargetMap.find(contextId);
@@ -709,7 +702,7 @@ void RenderTarget::setupDraw(bool useVertexCache, const RenderStates& states)
     }
     else
     {
-        Uint64 textureId = states.texture ? states.texture->m_cacheId : 0;
+        std::uint64_t textureId = states.texture ? states.texture->m_cacheId : 0;
         if (textureId != m_cache.lastTextureId)
             applyTexture(states.texture);
     }
@@ -725,7 +718,7 @@ void RenderTarget::drawPrimitives(PrimitiveType type, std::size_t firstVertex, s
 {
     // Find the OpenGL primitive type
     static constexpr GLenum modes[] = {GL_POINTS, GL_LINES, GL_LINE_STRIP, GL_TRIANGLES, GL_TRIANGLE_STRIP, GL_TRIANGLE_FAN};
-    GLenum                  mode = modes[type];
+    GLenum                  mode = modes[static_cast<std::size_t>(type)];
 
     // Draw the primitives
     glCheck(glDrawArrays(mode, static_cast<GLint>(firstVertex), static_cast<GLsizei>(vertexCount)));

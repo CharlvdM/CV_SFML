@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2023 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -33,11 +33,12 @@
 #include <SFML/Window/Context.hpp>
 #include <SFML/Window/Window.hpp>
 
+#include <atomic>
 #include <cassert>
 #include <climits>
 #include <cstring>
-#include <mutex>
 #include <ostream>
+#include <utility>
 
 
 namespace
@@ -45,18 +46,13 @@ namespace
 // A nested named namespace is used here to allow unity builds of SFML.
 namespace TextureImpl
 {
-std::recursive_mutex idMutex;
-std::recursive_mutex maximumSizeMutex;
-
 // Thread-safe unique identifier generator,
 // is used for states cache (see RenderTarget)
-sf::Uint64 getUniqueId()
+std::uint64_t getUniqueId() noexcept
 {
-    std::scoped_lock lock(idMutex);
+    static std::atomic<std::uint64_t> id(1); // start at 1, zero is "no texture"
 
-    static sf::Uint64 id = 1; // start at 1, zero is "no texture"
-
-    return id++;
+    return id.fetch_add(1);
 }
 } // namespace TextureImpl
 } // namespace
@@ -65,32 +61,16 @@ sf::Uint64 getUniqueId()
 namespace sf
 {
 ////////////////////////////////////////////////////////////
-Texture::Texture() :
-m_size(0, 0),
-m_actualSize(0, 0),
-m_texture(0),
-m_isSmooth(false),
-m_sRgb(false),
-m_isRepeated(false),
-m_pixelsFlipped(false),
-m_fboAttachment(false),
-m_hasMipmap(false),
-m_cacheId(TextureImpl::getUniqueId())
+Texture::Texture() : m_cacheId(TextureImpl::getUniqueId())
 {
 }
 
 
 ////////////////////////////////////////////////////////////
 Texture::Texture(const Texture& copy) :
-m_size(0, 0),
-m_actualSize(0, 0),
-m_texture(0),
 m_isSmooth(copy.m_isSmooth),
 m_sRgb(copy.m_sRgb),
 m_isRepeated(copy.m_isRepeated),
-m_pixelsFlipped(false),
-m_fboAttachment(false),
-m_hasMipmap(false),
 m_cacheId(TextureImpl::getUniqueId())
 {
     if (copy.m_texture)
@@ -118,6 +98,49 @@ Texture::~Texture()
         GLuint texture = m_texture;
         glCheck(glDeleteTextures(1, &texture));
     }
+}
+
+////////////////////////////////////////////////////////////
+Texture::Texture(Texture&& right) noexcept :
+m_size(std::exchange(right.m_size, {})),
+m_actualSize(std::exchange(right.m_actualSize, {})),
+m_texture(std::exchange(right.m_texture, 0)),
+m_isSmooth(std::exchange(right.m_isSmooth, false)),
+m_sRgb(std::exchange(right.m_sRgb, false)),
+m_isRepeated(std::exchange(right.m_isRepeated, false)),
+m_fboAttachment(std::exchange(right.m_fboAttachment, false)),
+m_cacheId(std::exchange(right.m_cacheId, 0))
+{
+}
+
+////////////////////////////////////////////////////////////
+Texture& Texture::operator=(Texture&& right) noexcept
+{
+    // Catch self-moving.
+    if (&right == this)
+    {
+        return *this;
+    }
+
+    // Destroy the OpenGL texture
+    if (m_texture)
+    {
+        TransientContextLock lock;
+
+        GLuint texture = m_texture;
+        glCheck(glDeleteTextures(1, &texture));
+    }
+
+    // Move old to new.
+    m_size          = std::exchange(right.m_size, {});
+    m_actualSize    = std::exchange(right.m_actualSize, {});
+    m_texture       = std::exchange(right.m_texture, 0);
+    m_isSmooth      = std::exchange(right.m_isSmooth, false);
+    m_sRgb          = std::exchange(right.m_sRgb, false);
+    m_isRepeated    = std::exchange(right.m_isRepeated, false);
+    m_fboAttachment = std::exchange(right.m_fboAttachment, false);
+    m_cacheId       = std::exchange(right.m_cacheId, 0);
+    return *this;
 }
 
 
@@ -259,8 +282,7 @@ bool Texture::loadFromStream(InputStream& stream, const IntRect& area)
 bool Texture::loadFromImage(const Image& image, const IntRect& area)
 {
     // Retrieve the image size
-    int width  = static_cast<int>(image.getSize().x);
-    int height = static_cast<int>(image.getSize().y);
+    const auto [width, height] = Vector2i(image.getSize());
 
     // Load the entire image if the source area is either empty or contains the whole image
     if (area.width == 0 || (area.height == 0) ||
@@ -302,7 +324,7 @@ bool Texture::loadFromImage(const Image& image, const IntRect& area)
             priv::TextureSaver save;
 
             // Copy the pixels to the texture, row by row
-            const Uint8* pixels = image.getPixelsPtr() + 4 * (rectangle.left + (width * rectangle.top));
+            const std::uint8_t* pixels = image.getPixelsPtr() + 4 * (rectangle.left + (width * rectangle.top));
             glCheck(glBindTexture(GL_TEXTURE_2D, m_texture));
             for (int i = 0; i < rectangle.height; ++i)
             {
@@ -347,7 +369,7 @@ Image Texture::copyToImage() const
     priv::TextureSaver save;
 
     // Create an array of pixels
-    std::vector<Uint8> pixels(static_cast<std::size_t>(m_size.x) * static_cast<std::size_t>(m_size.y) * 4);
+    std::vector<std::uint8_t> pixels(m_size.x * m_size.y * 4);
 
 #ifdef SFML_OPENGL_ES
 
@@ -381,14 +403,13 @@ Image Texture::copyToImage() const
         // Texture is either padded or flipped, we have to use a slower algorithm
 
         // All the pixels will first be copied to a temporary array
-        std::vector<Uint8> allPixels(
-            static_cast<std::size_t>(m_actualSize.x) * static_cast<std::size_t>(m_actualSize.y) * 4);
+        std::vector<std::uint8_t> allPixels(m_actualSize.x * m_actualSize.y * 4);
         glCheck(glBindTexture(GL_TEXTURE_2D, m_texture));
         glCheck(glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, allPixels.data()));
 
         // Then we copy the useful pixels from the temporary array to the final one
-        const Uint8* src = allPixels.data();
-        Uint8* dst = pixels.data();
+        const std::uint8_t* src = allPixels.data();
+        std::uint8_t* dst = pixels.data();
         int srcPitch = static_cast<int>(m_actualSize.x * 4);
         unsigned int dstPitch = m_size.x * 4;
 
@@ -418,7 +439,7 @@ Image Texture::copyToImage() const
 
 
 ////////////////////////////////////////////////////////////
-void Texture::update(const Uint8* pixels)
+void Texture::update(const std::uint8_t* pixels)
 {
     // Update the whole texture
     update(pixels, m_size, {0, 0});
@@ -426,7 +447,7 @@ void Texture::update(const Uint8* pixels)
 
 
 ////////////////////////////////////////////////////////////
-void Texture::update(const Uint8* pixels, const Vector2u& size, const Vector2u& dest)
+void Texture::update(const std::uint8_t* pixels, const Vector2u& size, const Vector2u& dest)
 {
     assert(dest.x + size.x <= m_size.x);
     assert(dest.y + size.y <= m_size.y);
@@ -849,21 +870,18 @@ void Texture::bind(const Texture* texture, CoordinateType coordinateType)
 ////////////////////////////////////////////////////////////
 unsigned int Texture::getMaximumSize()
 {
-    std::scoped_lock lock(TextureImpl::maximumSizeMutex);
-
-    static bool  checked = false;
-    static GLint size    = 0;
-
-    if (!checked)
+    static const unsigned int size = []()
     {
-        checked = true;
-
         TransientContextLock transientLock;
 
-        glCheck(glGetIntegerv(GL_MAX_TEXTURE_SIZE, &size));
-    }
+        GLint value = 0;
 
-    return static_cast<unsigned int>(size);
+        glCheck(glGetIntegerv(GL_MAX_TEXTURE_SIZE, &value));
+
+        return static_cast<unsigned int>(value);
+    }();
+
+    return size;
 }
 
 
@@ -879,7 +897,7 @@ Texture& Texture::operator=(const Texture& right)
 
 
 ////////////////////////////////////////////////////////////
-void Texture::swap(Texture& right)
+void Texture::swap(Texture& right) noexcept
 {
     std::swap(m_size, right.m_size);
     std::swap(m_actualSize, right.m_actualSize);
@@ -920,6 +938,13 @@ unsigned int Texture::getValidSize(unsigned int size)
 
         return powerOfTwo;
     }
+}
+
+
+////////////////////////////////////////////////////////////
+void swap(Texture& left, Texture& right) noexcept
+{
+    left.swap(right);
 }
 
 } // namespace sf

@@ -22,13 +22,10 @@
 //
 ////////////////////////////////////////////////////////////
 
-#ifndef SFML_JOYSTICKIMPLOPENBSD_HPP
-#define SFML_JOYSTICKIMPLOPENBSD_HPP
+#pragma once
 
 
-namespace sf
-{
-namespace priv
+namespace sf::priv
 {
 ////////////////////////////////////////////////////////////
 /// \brief OpenBSD implementation of joysticks
@@ -107,9 +104,4 @@ private:
     Joystick::Identification m_identification; ///< Joystick identification
 };
 
-} // namespace priv
-
-} // namespace sf
-
-
-#endif // SFML_JOYSTICKIMPLOPENBSD_HPP
+} // namespace sf::priv

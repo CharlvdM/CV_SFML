@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2023 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -41,14 +41,14 @@
 namespace sf
 {
 ////////////////////////////////////////////////////////////
-InputSoundFile::StreamDeleter::StreamDeleter(bool theOwned) : owned{theOwned}
+InputSoundFile::StreamDeleter::StreamDeleter(bool theOwned) : owned(theOwned)
 {
 }
 
 
 ////////////////////////////////////////////////////////////
 template <typename T>
-InputSoundFile::StreamDeleter::StreamDeleter(const std::default_delete<T>&) : owned{true}
+InputSoundFile::StreamDeleter::StreamDeleter(const std::default_delete<T>&)
 {
 }
 
@@ -62,23 +62,7 @@ void InputSoundFile::StreamDeleter::operator()(InputStream* ptr) const
 
 
 ////////////////////////////////////////////////////////////
-InputSoundFile::InputSoundFile() :
-m_reader(),
-m_stream(nullptr, false),
-m_sampleOffset(0),
-m_sampleCount(0),
-m_channelCount(0),
-m_sampleRate(0)
-{
-}
-
-
-////////////////////////////////////////////////////////////
-InputSoundFile::~InputSoundFile()
-{
-    // Close the file in case it was open
-    close();
-}
+InputSoundFile::InputSoundFile() = default;
 
 
 ////////////////////////////////////////////////////////////
@@ -189,7 +173,7 @@ bool InputSoundFile::openFromStream(InputStream& stream)
 
 
 ////////////////////////////////////////////////////////////
-Uint64 InputSoundFile::getSampleCount() const
+std::uint64_t InputSoundFile::getSampleCount() const
 {
     return m_sampleCount;
 }
@@ -234,14 +218,14 @@ Time InputSoundFile::getTimeOffset() const
 
 
 ////////////////////////////////////////////////////////////
-Uint64 InputSoundFile::getSampleOffset() const
+std::uint64_t InputSoundFile::getSampleOffset() const
 {
     return m_sampleOffset;
 }
 
 
 ////////////////////////////////////////////////////////////
-void InputSoundFile::seek(Uint64 sampleOffset)
+void InputSoundFile::seek(std::uint64_t sampleOffset)
 {
     if (m_reader && m_channelCount != 0)
     {
@@ -256,14 +240,14 @@ void InputSoundFile::seek(Uint64 sampleOffset)
 ////////////////////////////////////////////////////////////
 void InputSoundFile::seek(Time timeOffset)
 {
-    seek(static_cast<Uint64>(timeOffset.asSeconds() * static_cast<float>(m_sampleRate)) * m_channelCount);
+    seek(static_cast<std::uint64_t>(timeOffset.asSeconds() * static_cast<float>(m_sampleRate)) * m_channelCount);
 }
 
 
 ////////////////////////////////////////////////////////////
-Uint64 InputSoundFile::read(Int16* samples, Uint64 maxCount)
+std::uint64_t InputSoundFile::read(std::int16_t* samples, std::uint64_t maxCount)
 {
-    Uint64 readSamples = 0;
+    std::uint64_t readSamples = 0;
     if (m_reader && samples && maxCount)
         readSamples = m_reader->read(samples, maxCount);
     m_sampleOffset += readSamples;

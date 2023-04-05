@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Marco Antognini (antognini.marco@gmail.com),
+// Copyright (C) 2007-2023 Marco Antognini (antognini.marco@gmail.com),
 //                         Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
@@ -32,15 +32,13 @@
 
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
-namespace sf
-{
-namespace priv
+namespace sf::priv
 {
 
 ////////////////////////////////////////////////////////////
-size_t modeBitsPerPixel(CGDisplayModeRef mode)
+std::size_t modeBitsPerPixel(CGDisplayModeRef mode)
 {
-    size_t bpp = 0; // no match
+    std::size_t bpp = 0; // no match
 
     // Compare encoding.
     CFStringRef pixEnc = CGDisplayModeCopyPixelEncoding(mode);
@@ -59,13 +57,13 @@ size_t modeBitsPerPixel(CGDisplayModeRef mode)
 
 
 ////////////////////////////////////////////////////////////
-size_t displayBitsPerPixel(CGDirectDisplayID displayId)
+std::size_t displayBitsPerPixel(CGDirectDisplayID displayId)
 {
     // Get the display mode.
     CGDisplayModeRef mode = CGDisplayCopyDisplayMode(displayId);
 
     // Get bpp for the mode.
-    const size_t bpp = modeBitsPerPixel(mode);
+    const std::size_t bpp = modeBitsPerPixel(mode);
 
     // Clean up Memory.
     CGDisplayModeRelease(mode);
@@ -95,5 +93,4 @@ VideoMode convertCGModeToSFMode(CGDisplayModeRef cgmode)
     return mode;
 }
 
-} // namespace priv
-} // namespace sf
+} // namespace sf::priv

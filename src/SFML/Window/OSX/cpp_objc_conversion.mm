@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Marco Antognini (antognini.marco@gmail.com),
+// Copyright (C) 2007-2023 Marco Antognini (antognini.marco@gmail.com),
 //                         Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
@@ -45,7 +45,7 @@ NSString* stringToNSString(const std::string& string)
 ////////////////////////////////////////////////////////////
 NSString* sfStringToNSString(const sf::String& string)
 {
-    sf::Uint32  length = static_cast<sf::Uint32>(string.getSize() * sizeof(sf::Uint32));
+    auto        length = static_cast<std::uint32_t>(string.getSize() * sizeof(std::uint32_t));
     const void* data   = reinterpret_cast<const void*>(string.getData());
 
     NSStringEncoding encoding;

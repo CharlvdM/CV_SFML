@@ -66,7 +66,7 @@ private:
 class WaveBlur : public Effect
 {
 public:
-    WaveBlur() : Effect("Wave + Blur")
+    WaveBlur() : Effect("Wave + Blur"), m_text(getFont())
     {
     }
 
@@ -92,15 +92,11 @@ public:
             "Mauris ultricies dolor sed massa convallis sed aliquet augue fringilla.\n"
             "Duis erat eros, porta in accumsan in, blandit quis sem.\n"
             "In hac habitasse platea dictumst. Etiam fringilla est id odio dapibus sit amet semper dui laoreet.\n");
-        m_text.setFont(getFont());
         m_text.setCharacterSize(22);
         m_text.setPosition({30.f, 20.f});
 
         // Load the shader
-        if (!m_shader.loadFromFile("resources/wave.vert", "resources/blur.frag"))
-            return false;
-
-        return true;
+        return m_shader.loadFromFile("resources/wave.vert", "resources/blur.frag");
     }
 
     void onUpdate(float time, float x, float y) override
@@ -135,27 +131,24 @@ public:
 
     bool onLoad() override
     {
-        std::uniform_real_distribution<float>     x_distribution(0, 800);
-        std::uniform_real_distribution<float>     y_distribution(0, 600);
-        std::uniform_int_distribution<sf::Uint16> color_distribution(0, 255);
+        std::uniform_real_distribution<float>        xDistribution(0, 800);
+        std::uniform_real_distribution<float>        yDistribution(0, 600);
+        std::uniform_int_distribution<std::uint16_t> colorDistribution(0, 255);
 
         // Create the points
-        m_points.setPrimitiveType(sf::Points);
+        m_points.setPrimitiveType(sf::PrimitiveType::Points);
         for (int i = 0; i < 40000; ++i)
         {
-            auto x = x_distribution(rng);
-            auto y = y_distribution(rng);
-            auto r = static_cast<sf::Uint8>(color_distribution(rng));
-            auto g = static_cast<sf::Uint8>(color_distribution(rng));
-            auto b = static_cast<sf::Uint8>(color_distribution(rng));
+            auto x = xDistribution(rng);
+            auto y = yDistribution(rng);
+            auto r = static_cast<std::uint8_t>(colorDistribution(rng));
+            auto g = static_cast<std::uint8_t>(colorDistribution(rng));
+            auto b = static_cast<std::uint8_t>(colorDistribution(rng));
             m_points.append(sf::Vertex(sf::Vector2f(x, y), sf::Color(r, g, b)));
         }
 
         // Load the shader
-        if (!m_shader.loadFromFile("resources/storm.vert", "resources/blink.frag"))
-            return false;
-
-        return true;
+        return m_shader.loadFromFile("resources/storm.vert", "resources/blink.frag");
     }
 
     void onUpdate(float time, float x, float y) override
@@ -270,7 +263,7 @@ private:
 class Geometry : public Effect
 {
 public:
-    Geometry() : Effect("Geometry Shader Billboards"), m_pointCloud(sf::Points, 10000)
+    Geometry() : Effect("Geometry Shader Billboards"), m_pointCloud(sf::PrimitiveType::Points, 10000)
     {
     }
 
@@ -285,8 +278,9 @@ public:
         {
             // Spread the coordinates from -480 to +480
             // So they'll always fill the viewport at 800x600
-            m_pointCloud[i].position.x = static_cast<float>(rand() % 960) - 480.f;
-            m_pointCloud[i].position.y = static_cast<float>(rand() % 960) - 480.f;
+            std::uniform_real_distribution<float> positionDistribution(-480, 480);
+            m_pointCloud[i].position.x = positionDistribution(rng);
+            m_pointCloud[i].position.y = positionDistribution(rng);
         }
 
         // Load the texture
@@ -383,12 +377,12 @@ int main()
     textBackground.setColor(sf::Color(255, 255, 255, 200));
 
     // Create the description text
-    sf::Text description("Current effect: " + effects[current]->getName(), font, 20);
+    sf::Text description(font, "Current effect: " + effects[current]->getName(), 20);
     description.setPosition({10.f, 530.f});
     description.setFillColor(sf::Color(80, 80, 80));
 
     // Create the instructions text
-    sf::Text instructions("Press left and right arrows to change the current shader", font, 20);
+    sf::Text instructions(font, "Press left and right arrows to change the current shader", 20);
     instructions.setPosition({280.f, 555.f});
     instructions.setFillColor(sf::Color(80, 80, 80));
 
@@ -437,8 +431,7 @@ int main()
         }
 
         // Update the current example
-        float x = static_cast<float>(sf::Mouse::getPosition(window).x) / static_cast<float>(window.getSize().x);
-        float y = static_cast<float>(sf::Mouse::getPosition(window).y) / static_cast<float>(window.getSize().y);
+        const auto [x, y] = sf::Vector2f(sf::Mouse::getPosition(window)).cwiseDiv(sf::Vector2f(window.getSize()));
         effects[current]->update(clock.getElapsedTime().asSeconds(), x, y);
 
         // Clear the window
@@ -462,6 +455,4 @@ int main()
         // Finally, display the rendered frame on screen
         window.display();
     }
-
-    return EXIT_SUCCESS;
 }

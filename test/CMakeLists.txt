@@ -2,13 +2,21 @@ include(FetchContent)
 
 set(DOCTEST_NO_INSTALL ON)
 FetchContent_Declare(doctest
-    GIT_REPOSITORY "https://github.com/doctest/doctest.git"
+    GIT_REPOSITORY https://github.com/doctest/doctest.git
     GIT_TAG v2.4.9
 )
 FetchContent_MakeAvailable(doctest)
+include(${doctest_SOURCE_DIR}/scripts/cmake/doctest.cmake)
+
+# Ensure that doctest sources and headers are not analyzed by any tools
+set_target_properties(doctest_with_main PROPERTIES COMPILE_OPTIONS "" EXPORT_COMPILE_COMMANDS OFF)
+get_target_property(DOCTEST_INCLUDE_DIRS doctest INTERFACE_INCLUDE_DIRECTORIES)
+target_include_directories(doctest SYSTEM INTERFACE ${DOCTEST_INCLUDE_DIRS})
+
+add_subdirectory(install)
+set_target_warnings(test-sfml-install)
 
 add_library(sfml-test-main STATIC
-    DoctestMain.cpp
     TestUtilities/SystemUtil.hpp
     TestUtilities/SystemUtil.cpp
     TestUtilities/WindowUtil.hpp
@@ -18,19 +26,20 @@ add_library(sfml-test-main STATIC
 )
 target_include_directories(sfml-test-main PUBLIC TestUtilities)
 target_compile_definitions(sfml-test-main PUBLIC DOCTEST_CONFIG_REQUIRE_STRINGIFICATION_FOR_ALL_USED_TYPES)
-target_link_libraries(sfml-test-main PUBLIC SFML::System doctest::doctest)
+target_link_libraries(sfml-test-main PUBLIC SFML::System doctest::doctest_with_main)
 set_target_warnings(sfml-test-main)
 
-SET(SYSTEM_SRC
-    System/Angle.cpp
-    System/Clock.cpp
-    System/Config.cpp
-    System/Err.cpp
-    System/FileInputStream.cpp
-    System/MemoryInputStream.cpp
-    System/Time.cpp
-    System/Vector2.cpp
-    System/Vector3.cpp
+set(SYSTEM_SRC
+    System/Angle.test.cpp
+    System/Clock.test.cpp
+    System/Config.test.cpp
+    System/Err.test.cpp
+    System/FileInputStream.test.cpp
+    System/MemoryInputStream.test.cpp
+    System/String.test.cpp
+    System/Time.test.cpp
+    System/Vector2.test.cpp
+    System/Vector3.test.cpp
 )
 sfml_add_test(test-sfml-system "${SYSTEM_SRC}" SFML::System)
 target_compile_definitions(test-sfml-system PRIVATE
@@ -40,68 +49,90 @@ target_compile_definitions(test-sfml-system PRIVATE
     EXPECTED_SFML_VERSION_IS_RELEASE=$<IF:$<BOOL:${VERSION_IS_RELEASE}>,true,false>
 )
 
-SET(WINDOW_SRC
-    Window/ContextSettings.cpp
-    Window/VideoMode.cpp
+sfml_set_option(SFML_RUN_DISPLAY_TESTS ON BOOL "TRUE to run tests that require a display, FALSE to ignore it")
+
+set(WINDOW_SRC
+    Window/Context.test.cpp
+    Window/ContextSettings.test.cpp
+    Window/Cursor.test.cpp
+    Window/GlResource.test.cpp
+    Window/VideoMode.test.cpp
+    Window/Window.test.cpp
+    Window/WindowBase.test.cpp
 )
 sfml_add_test(test-sfml-window "${WINDOW_SRC}" SFML::Window)
+if(SFML_RUN_DISPLAY_TESTS)
+    target_compile_definitions(test-sfml-window PRIVATE SFML_RUN_DISPLAY_TESTS)
+endif()
 
-SET(GRAPHICS_SRC
-    Graphics/BlendMode.cpp
-    Graphics/CircleShape.cpp
-    Graphics/Color.cpp
-    Graphics/ConvexShape.cpp
-    Graphics/Glyph.cpp
-    Graphics/Image.cpp
-    Graphics/Rect.cpp
-    Graphics/RectangleShape.cpp
-    Graphics/Shape.cpp
-    Graphics/RenderStates.cpp
-    Graphics/Transform.cpp
-    Graphics/Transformable.cpp
-    Graphics/Vertex.cpp
-    Graphics/VertexArray.cpp
-    Graphics/View.cpp
+set(GRAPHICS_SRC
+    Graphics/BlendMode.test.cpp
+    Graphics/CircleShape.test.cpp
+    Graphics/Color.test.cpp
+    Graphics/ConvexShape.test.cpp
+    Graphics/Drawable.test.cpp
+    Graphics/Font.test.cpp
+    Graphics/Glyph.test.cpp
+    Graphics/Image.test.cpp
+    Graphics/Rect.test.cpp
+    Graphics/RectangleShape.test.cpp
+    Graphics/RenderStates.test.cpp
+    Graphics/RenderTarget.test.cpp
+    Graphics/RenderTexture.test.cpp
+    Graphics/RenderWindow.test.cpp
+    Graphics/Shader.test.cpp
+    Graphics/Shape.test.cpp
+    Graphics/Sprite.test.cpp
+    Graphics/Text.test.cpp
+    Graphics/Texture.test.cpp
+    Graphics/Transform.test.cpp
+    Graphics/Transformable.test.cpp
+    Graphics/Vertex.test.cpp
+    Graphics/VertexArray.test.cpp
+    Graphics/VertexBuffer.test.cpp
+    Graphics/View.test.cpp
 )
 sfml_add_test(test-sfml-graphics "${GRAPHICS_SRC}" SFML::Graphics)
+if(SFML_RUN_DISPLAY_TESTS)
+    target_compile_definitions(test-sfml-graphics PRIVATE SFML_RUN_DISPLAY_TESTS)
+endif()
 
-SET(NETWORK_SRC
-    Network/IpAddress.cpp
-    Network/Packet.cpp
+set(NETWORK_SRC
+    Network/Ftp.test.cpp
+    Network/Http.test.cpp
+    Network/IpAddress.test.cpp
+    Network/Packet.test.cpp
+    Network/Socket.test.cpp
+    Network/SocketSelector.test.cpp
+    Network/TcpListener.test.cpp
+    Network/TcpSocket.test.cpp
+    Network/UdpSocket.test.cpp
 )
 sfml_add_test(test-sfml-network "${NETWORK_SRC}" SFML::Network)
 
-SET(AUDIO_SRC
-    Audio/Dummy.cpp # TODO: Remove when there are real tests
+set(AUDIO_SRC
+    Audio/AlResource.test.cpp
+    Audio/InputSoundFile.test.cpp
+    Audio/Music.test.cpp
+    Audio/OutputSoundFile.test.cpp
+    Audio/Sound.test.cpp
+    Audio/SoundBuffer.test.cpp
+    Audio/SoundBufferRecorder.test.cpp
+    Audio/SoundRecorder.test.cpp
+    Audio/SoundSource.test.cpp
+    Audio/SoundStream.test.cpp
 )
 sfml_add_test(test-sfml-audio "${AUDIO_SRC}" SFML::Audio)
 
-# Automatically run the tests at the end of the build
-add_custom_target(runtests ALL
-                  DEPENDS test-sfml-system test-sfml-window test-sfml-graphics test-sfml-network test-sfml-audio
-)
-
 if(SFML_OS_WINDOWS AND NOT SFML_USE_SYSTEM_DEPS)
-    # Copy the binaries of SFML dependencies
-    list(APPEND BINARIES
-        "openal32.dll"
-    )
-
-    foreach (BINARY ${BINARIES})
-        if(ARCH_32BITS)
-            list(APPEND BINARY_PATHS "${PROJECT_SOURCE_DIR}/extlibs/bin/x86/${BINARY}")
-        elseif(ARCH_64BITS)
-            list(APPEND BINARY_PATHS "${PROJECT_SOURCE_DIR}/extlibs/bin/x64/${BINARY}")
-        endif()
-    endforeach()
-
-    add_custom_command(TARGET runtests
-                       COMMENT "Copy binaries"
-                       POST_BUILD COMMAND "${CMAKE_COMMAND}" -E copy ${BINARY_PATHS} "$<TARGET_FILE_DIR:test-sfml-system>"
-    )
+    add_custom_command(
+        TARGET test-sfml-audio
+        COMMENT "Copy OpenAL DLL"
+        PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/extlibs/bin/$<IF:$<BOOL:${ARCH_64BITS}>,x64,x86>/openal32.dll $<TARGET_FILE_DIR:test-sfml-audio>
+        VERBATIM)
 endif()
 
-if(SFML_ENABLE_COVERAGE AND SFML_COMPILER_MSVC)
+if(SFML_ENABLE_COVERAGE AND SFML_OS_WINDOWS)
     # Try to find and use OpenCppCoverage for coverage reporting when building with MSVC
     find_program(OpenCppCoverage_BINARY "OpenCppCoverage.exe")
 
@@ -129,14 +160,12 @@ if(SFML_ENABLE_COVERAGE AND OpenCppCoverage_FOUND)
     string(REPLACE "/" "\\" COVERAGE_SRC "${PROJECT_SOURCE_DIR}/src")
     string(REPLACE "/" "\\" COVERAGE_INCLUDE "${PROJECT_SOURCE_DIR}/include")
 
-    add_custom_command(TARGET runtests
-                       COMMENT "Run tests"
-                       POST_BUILD COMMAND "${OpenCppCoverage_BINARY}" ARGS --quiet --export_type cobertura:"${CMAKE_BINARY_DIR}/coverage.out" --cover_children --excluded_modules "${COVERAGE_EXCLUDE}" --sources "${COVERAGE_SRC}" --sources "${COVERAGE_INCLUDE}" -- "${CMAKE_CTEST_COMMAND}" --output-on-failure -C $<CONFIG>
-    )
-else()
-    # Run tests without a coverage runner
-    add_custom_command(TARGET runtests
-                       COMMENT "Run tests"
-                       POST_BUILD COMMAND "${CMAKE_CTEST_COMMAND}" --output-on-failure -C $<CONFIG>
-    )
+    set(COVERAGE_PREFIX ${OpenCppCoverage_BINARY} ARGS --quiet --export_type cobertura:${PROJECT_BINARY_DIR}/coverage.out --cover_children --excluded_modules "${COVERAGE_EXCLUDE}" --sources "${COVERAGE_SRC}" --sources "${COVERAGE_INCLUDE}" --)
 endif()
+
+# Convenience for building and running tests in a single command
+add_custom_target(runtests DEPENDS test-sfml-system test-sfml-window test-sfml-graphics test-sfml-network test-sfml-audio)
+add_custom_command(TARGET runtests
+                   COMMENT "Run tests"
+                   POST_BUILD COMMAND ${COVERAGE_PREFIX} ${CMAKE_CTEST_COMMAND} --output-on-failure -C $<CONFIG>
+                   VERBATIM)

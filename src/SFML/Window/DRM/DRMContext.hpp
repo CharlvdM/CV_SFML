@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2020 Andrew Mickelson
+// Copyright (C) 2023 Andrew Mickelson
 //               2013 Jonathan De Wachter (dewachter.jonathan@gmail.com)
 //
 // This software is provided 'as-is', without any express or implied warranty.
@@ -23,30 +23,38 @@
 //
 ////////////////////////////////////////////////////////////
 
-#ifndef SFML_DRMCONTEXT_HPP
-#define SFML_DRMCONTEXT_HPP
+#pragma once
 
 ////////////////////////////////////////////////////////////
 // Headers
 ////////////////////////////////////////////////////////////
-#include <SFML/OpenGL.hpp>
 #include <SFML/Window/ContextSettings.hpp>
 #include <SFML/Window/EGLCheck.hpp>
 #include <SFML/Window/GlContext.hpp>
 #include <SFML/Window/VideoMode.hpp>
 
-#include <drm-common.h>
-#define EGL_NO_X11
-#define MESA_EGL_NO_X11_HEADERS
-#include <EGL/egl.h>
+#include <glad/egl.h>
+
 #include <gbm.h>
 #include <xf86drmMode.h>
 
 
-namespace sf
+namespace sf::priv
 {
-namespace priv
+struct Drm
 {
+    int fileDescriptor;
+
+    drmModeModeInfoPtr mode;
+    std::uint32_t      crtcId;
+    std::uint32_t      connectorId;
+
+    drmModeCrtcPtr originalCrtc;
+
+    drmModeConnectorPtr savedConnector;
+    drmModeEncoderPtr   savedEncoder;
+};
+
 class WindowImplDRM;
 
 class DRMContext : public GlContext
@@ -85,7 +93,7 @@ public:
     /// \brief Destructor
     ///
     ////////////////////////////////////////////////////////////
-    ~DRMContext();
+    ~DRMContext() override;
 
     ////////////////////////////////////////////////////////////
     /// \brief Activate the context as the current target
@@ -96,13 +104,13 @@ public:
     /// \return True on success, false if any error happened
     ///
     ////////////////////////////////////////////////////////////
-    virtual bool makeCurrent(bool current) override;
+    bool makeCurrent(bool current) override;
 
     ////////////////////////////////////////////////////////////
     /// \brief Display what has been rendered to the context so far
     ///
     ////////////////////////////////////////////////////////////
-    virtual void display() override;
+    void display() override;
 
     ////////////////////////////////////////////////////////////
     /// \brief Enable or disable vertical synchronization
@@ -115,7 +123,7 @@ public:
     /// \param enabled: True to enable v-sync, false to deactivate
     ///
     ////////////////////////////////////////////////////////////
-    virtual void setVerticalSyncEnabled(bool enabled) override;
+    void setVerticalSyncEnabled(bool enabled) override;
 
     ////////////////////////////////////////////////////////////
     /// \brief Create the EGL context
@@ -176,7 +184,7 @@ protected:
     /// \brief Get Direct Rendering Manager pointer
     ///
     ////////////////////////////////////////////////////////////
-    static drm* getDRM();
+    static Drm& getDRM();
 
 private:
     ////////////////////////////////////////////////////////////
@@ -188,22 +196,17 @@ private:
     ////////////////////////////////////////////////////////////
     // Member data
     ////////////////////////////////////////////////////////////
-    EGLDisplay m_display; ///< The internal EGL display
-    EGLContext m_context; ///< The internal EGL context
-    EGLSurface m_surface; ///< The internal EGL surface
-    EGLConfig  m_config;  ///< The internal EGL config
+    EGLDisplay m_display{EGL_NO_DISPLAY}; ///< The internal EGL display
+    EGLContext m_context{EGL_NO_CONTEXT}; ///< The internal EGL context
+    EGLSurface m_surface{EGL_NO_SURFACE}; ///< The internal EGL surface
+    EGLConfig  m_config{};                ///< The internal EGL config
 
-    gbm_bo*      m_currentBO;
-    gbm_bo*      m_nextBO;
-    gbm_surface* m_gbmSurface;
+    gbm_bo*      m_currentBO{};
+    gbm_bo*      m_nextBO{};
+    gbm_surface* m_gbmSurface{};
     Vector2u     m_size;
-    bool         m_shown;
-    bool         m_scanOut;
+    bool         m_shown{};
+    bool         m_scanOut{};
 };
 
-} // namespace priv
-
-} // namespace sf
-
-
-#endif // SFML_DRMCONTEXT_HPP
+} // namespace sf::priv

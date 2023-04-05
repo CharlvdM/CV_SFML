@@ -3,8 +3,7 @@
 // For a new system module test case, include this header.
 // This ensures that string conversions are visible and can be used by doctest for debug output.
 
-#ifndef SFML_TESTUTILITIES_SYSTEM_HPP
-#define SFML_TESTUTILITIES_SYSTEM_HPP
+#pragma once
 
 #include <SFML/System/Vector2.hpp>
 #include <SFML/System/Vector3.hpp>
@@ -20,23 +19,21 @@ class Angle;
 class String;
 class Time;
 
-std::ostream& operator<<(std::ostream& os, const sf::Angle& angle);
-std::ostream& operator<<(std::ostream& os, const sf::String& string);
-std::ostream& operator<<(std::ostream& os, sf::Time time);
+std::ostream& operator<<(std::ostream& os, const Angle& angle);
+std::ostream& operator<<(std::ostream& os, const String& string);
+std::ostream& operator<<(std::ostream& os, Time time);
 
 template <typename T>
-std::ostream& operator<<(std::ostream& os, const sf::Vector2<T>& vector)
+std::ostream& operator<<(std::ostream& os, const Vector2<T>& vector)
 {
     os << std::fixed << std::setprecision(std::numeric_limits<T>::max_digits10);
-    os << "(" << vector.x << ", " << vector.y << ")";
-    return os;
+    return os << "(" << vector.x << ", " << vector.y << ")";
 }
 
 template <typename T>
-std::ostream& operator<<(std::ostream& os, const sf::Vector3<T>& vector)
+std::ostream& operator<<(std::ostream& os, const Vector3<T>& vector)
 {
-    os << "(" << vector.x << ", " << vector.y << ", " << vector.z << ")";
-    return os;
+    return os << "(" << vector.x << ", " << vector.y << ", " << vector.z << ")";
 }
 } // namespace sf
 
@@ -64,5 +61,3 @@ std::ostream& operator<<(std::ostream& os, const Approx<T>& approx)
 {
     return os << approx.value;
 }
-
-#endif // SFML_TESTUTILITIES_SYSTEM_HPP

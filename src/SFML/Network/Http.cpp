@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2023 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -68,7 +68,7 @@ void Http::Request::setUri(const std::string& uri)
 
     // Make sure it starts with a '/'
     if (m_uri.empty() || (m_uri[0] != '/'))
-        m_uri.insert(0, "/");
+        m_uri.insert(m_uri.begin(), '/');
 }
 
 
@@ -96,19 +96,19 @@ std::string Http::Request::prepare() const
     std::string method;
     switch (m_method)
     {
-        case Get:
+        case Method::Get:
             method = "GET";
             break;
-        case Post:
+        case Method::Post:
             method = "POST";
             break;
-        case Head:
+        case Method::Head:
             method = "HEAD";
             break;
-        case Put:
+        case Method::Put:
             method = "PUT";
             break;
-        case Delete:
+        case Method::Delete:
             method = "DELETE";
             break;
     }
@@ -137,12 +137,6 @@ std::string Http::Request::prepare() const
 bool Http::Request::hasField(const std::string& field) const
 {
     return m_fields.find(toLower(field)) != m_fields.end();
-}
-
-
-////////////////////////////////////////////////////////////
-Http::Response::Response() : m_status(ConnectionFailed), m_majorVersion(0), m_minorVersion(0)
-{
 }
 
 
@@ -205,7 +199,7 @@ void Http::Response::parse(const std::string& data)
         else
         {
             // Invalid HTTP version
-            m_status = InvalidResponse;
+            m_status = Status::InvalidResponse;
             return;
         }
     }
@@ -219,7 +213,7 @@ void Http::Response::parse(const std::string& data)
     else
     {
         // Invalid status code
-        m_status = InvalidResponse;
+        m_status = Status::InvalidResponse;
         return;
     }
 
@@ -292,9 +286,7 @@ void Http::Response::parseFields(std::istream& in)
 
 
 ////////////////////////////////////////////////////////////
-Http::Http() : m_host(), m_port(0)
-{
-}
+Http::Http() = default;
 
 
 ////////////////////////////////////////////////////////////
@@ -359,7 +351,7 @@ Http::Response Http::sendRequest(const Http::Request& request, Time timeout)
         out << toSend.m_body.size();
         toSend.setField("Content-Length", out.str());
     }
-    if ((toSend.m_method == Request::Post) && !toSend.hasField("Content-Type"))
+    if ((toSend.m_method == Request::Method::Post) && !toSend.hasField("Content-Type"))
     {
         toSend.setField("Content-Type", "application/x-www-form-urlencoded");
     }
@@ -372,7 +364,7 @@ Http::Response Http::sendRequest(const Http::Request& request, Time timeout)
     Response received;
 
     // Connect the socket to the host
-    if (m_connection.connect(m_host.value(), m_port, timeout) == Socket::Done)
+    if (m_connection.connect(m_host.value(), m_port, timeout) == Socket::Status::Done)
     {
         // Convert the request to string and send it through the connected socket
         std::string requestStr = toSend.prepare();
@@ -380,13 +372,13 @@ Http::Response Http::sendRequest(const Http::Request& request, Time timeout)
         if (!requestStr.empty())
         {
             // Send it through the socket
-            if (m_connection.send(requestStr.c_str(), requestStr.size()) == Socket::Done)
+            if (m_connection.send(requestStr.c_str(), requestStr.size()) == Socket::Status::Done)
             {
                 // Wait for the server's response
                 std::string receivedStr;
                 std::size_t size = 0;
                 char        buffer[1024];
-                while (m_connection.receive(buffer, sizeof(buffer), size) == Socket::Done)
+                while (m_connection.receive(buffer, sizeof(buffer), size) == Socket::Status::Done)
                 {
                     receivedStr.append(buffer, buffer + size);
                 }

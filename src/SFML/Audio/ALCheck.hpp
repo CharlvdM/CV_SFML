@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2023 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -22,8 +22,7 @@
 //
 ////////////////////////////////////////////////////////////
 
-#ifndef SFML_ALCHECK_HPP
-#define SFML_ALCHECK_HPP
+#pragma once
 
 ////////////////////////////////////////////////////////////
 // Headers
@@ -31,6 +30,7 @@
 #include <SFML/Config.hpp>
 
 #include <filesystem>
+#include <string_view>
 
 #if defined(__APPLE__)
 #pragma GCC diagnostic push
@@ -40,9 +40,7 @@
 #include <al.h>
 #include <alc.h>
 
-namespace sf
-{
-namespace priv
+namespace sf::priv
 {
 ////////////////////////////////////////////////////////////
 /// Let's define a macro to quickly check every OpenAL API call
@@ -76,7 +74,7 @@ namespace priv
 /// \param expression The evaluated expression as a string
 ///
 ////////////////////////////////////////////////////////////
-void alCheckError(const std::filesystem::path& file, unsigned int line, const char* expression);
+void alCheckError(const std::filesystem::path& file, unsigned int line, std::string_view expression);
 
 
 ////////////////////////////////////////////////////////////
@@ -87,12 +85,8 @@ void alCheckError(const std::filesystem::path& file, unsigned int line, const ch
 ////////////////////////////////////////////////////////////
 ALenum alGetLastErrorImpl();
 
-} // namespace priv
+} // namespace sf::priv
 
-} // namespace sf
-
-
-#endif // SFML_ALCHECK_HPP
 
 #if defined(__APPLE__)
 #pragma GCC diagnostic pop

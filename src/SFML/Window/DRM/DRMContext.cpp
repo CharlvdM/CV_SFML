@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2020 Andrew Mickelson
+// Copyright (C) 2023 Andrew Mickelson
 //               2013 Jonathan De Wachter (dewachter.jonathan@gmail.com)
 //
 // This software is provided 'as-is', without any express or implied warranty.
@@ -26,7 +26,6 @@
 ////////////////////////////////////////////////////////////
 // Headers
 ////////////////////////////////////////////////////////////
-#include <SFML/OpenGL.hpp>
 #include <SFML/System/Err.hpp>
 #include <SFML/System/Sleep.hpp>
 #include <SFML/Window/DRM/DRMContext.hpp>
@@ -35,13 +34,29 @@
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
+#include <fcntl.h>
 #include <poll.h>
 #include <unistd.h>
+#include <xf86drm.h>
+
+// We check for this definition in order to avoid multiple definitions of GLAD
+// entities during unity builds of SFML.
+#ifndef SF_GLAD_EGL_IMPLEMENTATION_INCLUDED
+#define SF_GLAD_EGL_IMPLEMENTATION_INCLUDED
+#define SF_GLAD_EGL_IMPLEMENTATION
+#include <glad/egl.h>
+#endif
 
 namespace
 {
+struct DrmFb
+{
+    gbm_bo*       bo;
+    std::uint32_t fbId;
+};
+
 bool            initialized = false;
-drm             drmNode;
+sf::priv::Drm   drmNode;
 drmEventContext drmEventCtx;
 pollfd          pollFD;
 gbm_device*     gbmDevice      = nullptr;
@@ -49,13 +64,13 @@ int             contextCount   = 0;
 EGLDisplay      display        = EGL_NO_DISPLAY;
 int             waitingForFlip = 0;
 
-static void pageFlipHandler(int /* fd */, unsigned int /* frame */, unsigned int /* sec */, unsigned int /* usec */, void* data)
+void pageFlipHandler(int /* fd */, unsigned int /* frame */, unsigned int /* sec */, unsigned int /* usec */, void* data)
 {
     int* temp = static_cast<int*>(data);
     *temp     = 0;
 }
 
-static bool waitForFlip(int timeout)
+bool waitForFlip(int timeout)
 {
     while (waitingForFlip)
     {
@@ -69,7 +84,7 @@ static bool waitForFlip(int timeout)
 
         if (pollFD.revents & POLLIN)
         {
-            drmHandleEvent(drmNode.fd, &drmEventCtx);
+            drmHandleEvent(drmNode.fileDescriptor, &drmEventCtx);
         }
         else
         {
@@ -84,36 +99,337 @@ void cleanup()
     if (!initialized)
         return;
 
-    drmModeSetCrtc(drmNode.fd,
-                   drmNode.original_crtc->crtc_id,
-                   drmNode.original_crtc->buffer_id,
-                   drmNode.original_crtc->x,
-                   drmNode.original_crtc->y,
-                   &drmNode.connector_id,
+    drmModeSetCrtc(drmNode.fileDescriptor,
+                   drmNode.originalCrtc->crtc_id,
+                   drmNode.originalCrtc->buffer_id,
+                   drmNode.originalCrtc->x,
+                   drmNode.originalCrtc->y,
+                   &drmNode.connectorId,
                    1,
-                   &drmNode.original_crtc->mode);
+                   &drmNode.originalCrtc->mode);
 
-    drmModeFreeConnector(drmNode.saved_connector);
-    drmModeFreeEncoder(drmNode.saved_encoder);
-    drmModeFreeCrtc(drmNode.original_crtc);
+    drmModeFreeConnector(drmNode.savedConnector);
+    drmModeFreeEncoder(drmNode.savedEncoder);
+    drmModeFreeCrtc(drmNode.originalCrtc);
 
-    eglTerminate(display);
+    if (display != EGL_NO_DISPLAY)
+        eglTerminate(display);
     display = EGL_NO_DISPLAY;
 
     gbm_device_destroy(gbmDevice);
     gbmDevice = nullptr;
 
-    close(drmNode.fd);
+    close(drmNode.fileDescriptor);
 
-    drmNode.fd   = -1;
-    drmNode.mode = 0;
+    drmNode.fileDescriptor = -1;
+    drmNode.mode           = nullptr;
 
-    std::memset(&pollFD, 0, sizeof(pollfd));
-    std::memset(&drmEventCtx, 0, sizeof(drmEventContext));
+    pollFD      = {};
+    drmEventCtx = {};
 
     waitingForFlip = 0;
 
     initialized = false;
+}
+
+void drmFbDestroyCallback(gbm_bo* bo, void* data)
+{
+    int   drmFd = gbm_device_get_fd(gbm_bo_get_device(bo));
+    auto* fb    = static_cast<DrmFb*>(data);
+
+    if (fb->fbId)
+        drmModeRmFB(drmFd, fb->fbId);
+
+    delete fb;
+}
+
+DrmFb* drmFbGetFromBo(gbm_bo& bo)
+{
+    int   drmFd = gbm_device_get_fd(gbm_bo_get_device(&bo));
+    auto* fb    = static_cast<DrmFb*>(gbm_bo_get_user_data(&bo));
+    if (fb)
+        return fb;
+
+    fb     = new DrmFb();
+    fb->bo = &bo;
+
+    const std::uint32_t width  = gbm_bo_get_width(&bo);
+    const std::uint32_t height = gbm_bo_get_height(&bo);
+    const std::uint32_t format = gbm_bo_get_format(&bo);
+
+    std::uint32_t strides[4]   = {0};
+    std::uint32_t handles[4]   = {0};
+    std::uint32_t offsets[4]   = {0};
+    std::uint64_t modifiers[4] = {0};
+    modifiers[0]               = gbm_bo_get_modifier(&bo);
+    const int numPlanes        = gbm_bo_get_plane_count(&bo);
+    for (int i = 0; i < numPlanes; ++i)
+    {
+        strides[i]   = gbm_bo_get_stride_for_plane(&bo, i);
+        handles[i]   = gbm_bo_get_handle(&bo).u32;
+        offsets[i]   = gbm_bo_get_offset(&bo, i);
+        modifiers[i] = modifiers[0];
+    }
+
+    std::uint32_t flags = 0;
+    if (modifiers[0])
+    {
+        flags = DRM_MODE_FB_MODIFIERS;
+    }
+
+    int result = drmModeAddFB2WithModifiers(drmFd, width, height, format, handles, strides, offsets, modifiers, &fb->fbId, flags);
+
+    if (result)
+    {
+        std::memset(handles, 0, 16);
+        handles[0] = gbm_bo_get_handle(&bo).u32;
+        std::memset(strides, 0, 16);
+        strides[0] = gbm_bo_get_stride(&bo);
+        std::memset(offsets, 0, 16);
+        result = drmModeAddFB2(drmFd, width, height, format, handles, strides, offsets, &fb->fbId, 0);
+    }
+
+    if (result)
+    {
+        sf::err() << "Failed to create fb: " << std::strerror(errno) << std::endl;
+        delete fb;
+        return nullptr;
+    }
+
+    gbm_bo_set_user_data(&bo, fb, drmFbDestroyCallback);
+
+    return fb;
+}
+
+std::uint32_t findCrtcForEncoder(const drmModeRes& resources, const drmModeEncoder& encoder)
+{
+    for (int i = 0; i < resources.count_crtcs; ++i)
+    {
+        // Possible_crtcs is a bitmask as described here:
+        // https://dvdhrm.wordpress.com/2012/09/13/linux-drm-mode-setting-api
+        const std::uint32_t crtcMask = 1U << i;
+        const std::uint32_t crtcId   = resources.crtcs[i];
+        if (encoder.possible_crtcs & crtcMask)
+        {
+            return crtcId;
+        }
+    }
+
+    // No match found
+    return 0;
+}
+
+std::uint32_t findCrtcForConnector(const sf::priv::Drm& drm, const drmModeRes& resources, const drmModeConnector& connector)
+{
+    for (int i = 0; i < connector.count_encoders; ++i)
+    {
+        const std::uint32_t     encoderId = connector.encoders[i];
+        const drmModeEncoderPtr encoder   = drmModeGetEncoder(drm.fileDescriptor, encoderId);
+
+        if (encoder)
+        {
+            const std::uint32_t crtcId = findCrtcForEncoder(resources, *encoder);
+
+            drmModeFreeEncoder(encoder);
+            if (crtcId != 0)
+            {
+                return crtcId;
+            }
+        }
+    }
+
+    // No match found
+    return 0;
+}
+
+int getResources(int fd, drmModeResPtr& resources)
+{
+    resources = drmModeGetResources(fd);
+    if (resources == nullptr)
+        return -1;
+    return 0;
+}
+
+int hasMonitorConnected(int fd, drmModeRes& resources)
+{
+    drmModeConnectorPtr connector;
+    for (int i = 0; i < resources.count_connectors; ++i)
+    {
+        connector = drmModeGetConnector(fd, resources.connectors[i]);
+        if (connector->connection == DRM_MODE_CONNECTED)
+        {
+            // There is a monitor connected
+            drmModeFreeConnector(connector);
+            connector = nullptr;
+            return 1;
+        }
+        drmModeFreeConnector(connector);
+        connector = nullptr;
+    }
+    return 0;
+}
+
+int findDrmDevice(drmModeResPtr& resources)
+{
+    static const int maxDrmDevices = 64;
+
+    drmDevicePtr devices[maxDrmDevices] = {};
+
+    const int numDevices = drmGetDevices2(0, devices, maxDrmDevices);
+    if (numDevices < 0)
+    {
+        sf::err() << "drmGetDevices2 failed: " << std::strerror(-numDevices) << std::endl;
+        return -1;
+    }
+
+    int fileDescriptor = -1;
+    for (int i = 0; i < numDevices; ++i)
+    {
+        drmDevicePtr device = devices[i];
+        int          result = 0;
+
+        if (!(device->available_nodes & (1 << DRM_NODE_PRIMARY)))
+            continue;
+        // OK, it's a primary device. If we can get the drmModeResources, it means it's also a KMS-capable device.
+        fileDescriptor = open(device->nodes[DRM_NODE_PRIMARY], O_RDWR);
+        if (fileDescriptor < 0)
+            continue;
+        result = getResources(fileDescriptor, resources);
+#ifdef SFML_DEBUG
+        sf::err() << "DRM device used: " << i << std::endl;
+#endif
+        if (!result && hasMonitorConnected(fileDescriptor, *resources) != 0)
+            break;
+        close(fileDescriptor);
+        fileDescriptor = -1;
+    }
+    drmFreeDevices(devices, numDevices);
+
+    if (fileDescriptor < 0)
+        sf::err() << "No drm device found!" << std::endl;
+    return fileDescriptor;
+}
+
+int initDrm(sf::priv::Drm& drm, const char* device, const char* modeStr, unsigned int vrefresh)
+{
+    drmModeResPtr resources;
+
+    if (device)
+    {
+        drm.fileDescriptor = open(device, O_RDWR);
+        const int ret      = getResources(drm.fileDescriptor, resources);
+        if (ret < 0 && errno == EOPNOTSUPP)
+            sf::err() << device << " does not look like a modeset device" << std::endl;
+    }
+    else
+    {
+        drm.fileDescriptor = findDrmDevice(resources);
+    }
+
+    if (drm.fileDescriptor < 0)
+    {
+        sf::err() << "Could not open drm device" << std::endl;
+        return -1;
+    }
+
+    if (!resources)
+    {
+        sf::err() << "drmModeGetResources failed: " << std::strerror(errno) << std::endl;
+        return -1;
+    }
+
+    // Find a connected connector:
+    drmModeConnectorPtr connector = nullptr;
+    for (int i = 0; i < resources->count_connectors; ++i)
+    {
+        connector = drmModeGetConnector(drm.fileDescriptor, resources->connectors[i]);
+        if (connector->connection == DRM_MODE_CONNECTED)
+        {
+            // It's connected, let's use this!
+            break;
+        }
+        drmModeFreeConnector(connector);
+        connector = nullptr;
+    }
+
+    if (!connector)
+    {
+        // We could be fancy and listen for hotplug events and wait for a connector..
+        sf::err() << "No connected connector!" << std::endl;
+        return -1;
+    }
+
+    // Find user requested mode:
+    if (modeStr && *modeStr)
+    {
+        for (int i = 0; i < connector->count_modes; ++i)
+        {
+            drmModeModeInfoPtr currentMode = &connector->modes[i];
+
+            if (std::string_view(currentMode->name) == modeStr)
+            {
+                if (vrefresh == 0 || currentMode->vrefresh == vrefresh)
+                {
+                    drm.mode = currentMode;
+                    break;
+                }
+            }
+        }
+        if (!drm.mode)
+            sf::err() << "Requested mode not found, using default mode!" << std::endl;
+    }
+
+    // Find encoder:
+    drmModeEncoderPtr encoder = nullptr;
+    for (int i = 0; i < resources->count_encoders; ++i)
+    {
+        encoder = drmModeGetEncoder(drm.fileDescriptor, resources->encoders[i]);
+        if (encoder->encoder_id == connector->encoder_id)
+            break;
+        drmModeFreeEncoder(encoder);
+        encoder = nullptr;
+    }
+
+    if (encoder)
+    {
+        drm.crtcId = encoder->crtc_id;
+    }
+    else
+    {
+        const std::uint32_t crtcId = findCrtcForConnector(drm, *resources, *connector);
+        if (crtcId == 0)
+        {
+            sf::err() << "No crtc found!" << std::endl;
+            return -1;
+        }
+
+        drm.crtcId = crtcId;
+    }
+
+    drmModeFreeResources(resources);
+
+    drm.connectorId = connector->connector_id;
+
+    drm.savedConnector = connector;
+    drm.savedEncoder   = encoder;
+
+    // Get original display mode so we can restore display mode after program exits
+    drm.originalCrtc = drmModeGetCrtc(drm.fileDescriptor, drm.crtcId);
+
+    // Let's use the current mode rather than the preferred one if the user didn't specify a mode with env vars
+    if (!drm.mode)
+    {
+#ifdef SFML_DEBUG
+        sf::err() << "DRM using the current mode" << std::endl;
+#endif
+        drm.mode = &(drm.originalCrtc->mode);
+    }
+
+#ifdef SFML_DEBUG
+    sf::err() << "DRM Mode used: " << drm.mode->name << "@" << drm.mode->vrefresh << std::endl;
+#endif
+
+    return 0;
 }
 
 void checkInit()
@@ -138,26 +454,25 @@ void checkInit()
     if (refreshString)
         refreshRate = static_cast<unsigned int>(atoi(refreshString));
 
-    if (init_drm(&drmNode,
-                 deviceString,     // device
-                 modeString,       // requested mode
-                 refreshRate) < 0) // screen refresh rate
+    if (initDrm(drmNode,
+                deviceString,     // device
+                modeString,       // requested mode
+                refreshRate) < 0) // screen refresh rate
     {
         sf::err() << "Error initializing DRM" << std::endl;
         return;
     }
 
-    gbmDevice = gbm_create_device(drmNode.fd);
+    gbmDevice = gbm_create_device(drmNode.fileDescriptor);
 
     std::atexit(cleanup);
     initialized = true;
 
-    pollFD.fd                     = drmNode.fd;
+    pollFD.fd                     = drmNode.fileDescriptor;
     pollFD.events                 = POLLIN;
     drmEventCtx.version           = 2;
     drmEventCtx.page_flip_handler = pageFlipHandler;
 }
-
 
 EGLDisplay getInitializedDisplay()
 {
@@ -165,10 +480,15 @@ EGLDisplay getInitializedDisplay()
 
     if (display == EGL_NO_DISPLAY)
     {
-        display = eglCheck(eglGetDisplay(reinterpret_cast<EGLNativeDisplayType>(gbmDevice)));
+        gladLoaderLoadEGL(EGL_NO_DISPLAY);
 
-        EGLint major, minor;
+        eglCheck(display = eglGetDisplay(reinterpret_cast<EGLNativeDisplayType>(gbmDevice)));
+
+        EGLint major;
+        EGLint minor;
         eglCheck(eglInitialize(display, &major, &minor));
+
+        gladLoaderLoadEGL(display);
 
 #if defined(SFML_OPENGL_ES)
         if (!eglBindAPI(EGL_OPENGL_ES_API))
@@ -188,22 +508,10 @@ EGLDisplay getInitializedDisplay()
 } // namespace
 
 
-namespace sf
-{
-namespace priv
+namespace sf::priv
 {
 ////////////////////////////////////////////////////////////
-DRMContext::DRMContext(DRMContext* shared) :
-m_display(EGL_NO_DISPLAY),
-m_context(EGL_NO_CONTEXT),
-m_surface(EGL_NO_SURFACE),
-m_config(nullptr),
-m_currentBO(nullptr),
-m_nextBO(nullptr),
-m_gbmSurface(nullptr),
-m_size(0, 0),
-m_shown(false),
-m_scanOut(false)
+DRMContext::DRMContext(DRMContext* shared)
 {
     contextCount++;
 
@@ -225,17 +533,7 @@ m_scanOut(false)
 
 
 ////////////////////////////////////////////////////////////
-DRMContext::DRMContext(DRMContext* shared, const ContextSettings& settings, const WindowImpl& owner, unsigned int bitsPerPixel) :
-m_display(EGL_NO_DISPLAY),
-m_context(EGL_NO_CONTEXT),
-m_surface(EGL_NO_SURFACE),
-m_config(nullptr),
-m_currentBO(nullptr),
-m_nextBO(nullptr),
-m_gbmSurface(nullptr),
-m_size(0, 0),
-m_shown(false),
-m_scanOut(false)
+DRMContext::DRMContext(DRMContext* shared, const ContextSettings& settings, const WindowImpl& owner, unsigned int bitsPerPixel)
 {
     contextCount++;
 
@@ -255,17 +553,7 @@ m_scanOut(false)
 
 
 ////////////////////////////////////////////////////////////
-DRMContext::DRMContext(DRMContext* shared, const ContextSettings& settings, const Vector2u& size) :
-m_display(EGL_NO_DISPLAY),
-m_context(EGL_NO_CONTEXT),
-m_surface(EGL_NO_SURFACE),
-m_config(nullptr),
-m_currentBO(nullptr),
-m_nextBO(nullptr),
-m_gbmSurface(nullptr),
-m_size(0, 0),
-m_shown(false),
-m_scanOut(false)
+DRMContext::DRMContext(DRMContext* shared, const ContextSettings& settings, const Vector2u& size)
 {
     contextCount++;
 
@@ -286,7 +574,8 @@ m_scanOut(false)
 DRMContext::~DRMContext()
 {
     // Deactivate the current context
-    EGLContext currentContext = eglCheck(eglGetCurrentContext());
+    EGLContext currentContext;
+    eglCheck(currentContext = eglGetCurrentContext());
 
     if (currentContext == m_context)
     {
@@ -344,7 +633,7 @@ void DRMContext::display()
     }
 
     // Handle display of buffer to the screen
-    drm_fb* fb = nullptr;
+    DrmFb* fb = nullptr;
 
     if (!waitForFlip(-1))
         return;
@@ -365,7 +654,7 @@ void DRMContext::display()
     if (!m_nextBO)
         return;
 
-    fb = drm_fb_get_from_bo(m_nextBO);
+    fb = drmFbGetFromBo(*m_nextBO);
     if (!fb)
     {
         err() << "Failed to get FB from buffer object" << std::endl;
@@ -375,7 +664,7 @@ void DRMContext::display()
     // If first time, need to first call drmModeSetCrtc()
     if (!m_shown)
     {
-        if (drmModeSetCrtc(drmNode.fd, drmNode.crtc_id, fb->fb_id, 0, 0, &drmNode.connector_id, 1, drmNode.mode))
+        if (drmModeSetCrtc(drmNode.fileDescriptor, drmNode.crtcId, fb->fbId, 0, 0, &drmNode.connectorId, 1, drmNode.mode))
         {
             err() << "Failed to set mode: " << std::strerror(errno) << std::endl;
             std::abort();
@@ -384,7 +673,7 @@ void DRMContext::display()
     }
 
     // Do page flip
-    if (!drmModePageFlip(drmNode.fd, drmNode.crtc_id, fb->fb_id, DRM_MODE_PAGE_FLIP_EVENT, &waitingForFlip))
+    if (!drmModePageFlip(drmNode.fileDescriptor, drmNode.crtcId, fb->fbId, DRM_MODE_PAGE_FLIP_EVENT, &waitingForFlip))
         waitingForFlip = 1;
 }
 
@@ -412,7 +701,7 @@ void DRMContext::createContext(DRMContext* shared)
         eglMakeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 
     // Create EGL context
-    m_context = eglCheck(eglCreateContext(m_display, m_config, toShared, contextVersion));
+    eglCheck(m_context = eglCreateContext(m_display, m_config, toShared, contextVersion));
     if (m_context == EGL_NO_CONTEXT)
         err() << "Failed to create EGL context" << std::endl;
 }
@@ -421,7 +710,7 @@ void DRMContext::createContext(DRMContext* shared)
 ////////////////////////////////////////////////////////////
 void DRMContext::createSurface(const Vector2u& size, unsigned int /*bpp*/, bool scanout)
 {
-    sf::Uint32 flags = GBM_BO_USE_RENDERING;
+    std::uint32_t flags = GBM_BO_USE_RENDERING;
 
     m_scanOut = scanout;
     if (m_scanOut)
@@ -437,8 +726,8 @@ void DRMContext::createSurface(const Vector2u& size, unsigned int /*bpp*/, bool 
 
     m_size = size;
 
-    m_surface = eglCheck(
-        eglCreateWindowSurface(m_display, m_config, reinterpret_cast<EGLNativeWindowType>(m_gbmSurface), nullptr));
+    eglCheck(
+        m_surface = eglCreateWindowSurface(m_display, m_config, reinterpret_cast<EGLNativeWindowType>(m_gbmSurface), nullptr));
 
     if (m_surface == EGL_NO_SURFACE)
     {
@@ -533,12 +822,10 @@ GlFunctionPointer DRMContext::getFunction(const char* name)
 
 
 ////////////////////////////////////////////////////////////
-drm* DRMContext::getDRM()
+Drm& DRMContext::getDRM()
 {
     checkInit();
-    return &drmNode;
+    return drmNode;
 }
 
-} // namespace priv
-
-} // namespace sf
+} // namespace sf::priv

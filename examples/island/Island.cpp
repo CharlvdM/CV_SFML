@@ -95,20 +95,18 @@ int main()
         return EXIT_FAILURE;
 
     // Create all of our graphics resources
-    sf::Text         hudText;
-    sf::Text         statusText;
+    sf::Text         hudText(font);
+    sf::Text         statusText(font);
     sf::Shader       terrainShader;
     sf::RenderStates terrainStates(&terrainShader);
-    sf::VertexBuffer terrain(sf::Triangles, sf::VertexBuffer::Static);
+    sf::VertexBuffer terrain(sf::PrimitiveType::Triangles, sf::VertexBuffer::Static);
 
     // Set up our text drawables
-    statusText.setFont(font);
     statusText.setCharacterSize(28);
     statusText.setFillColor(sf::Color::White);
     statusText.setOutlineColor(sf::Color::Black);
     statusText.setOutlineThickness(2.0f);
 
-    hudText.setFont(font);
     hudText.setCharacterSize(14);
     hudText.setFillColor(sf::Color::White);
     hudText.setOutlineColor(sf::Color::Black);
@@ -224,7 +222,7 @@ int main()
         if (prerequisitesSupported)
         {
             {
-                std::scoped_lock lock(workQueueMutex);
+                std::lock_guard lock(workQueueMutex);
 
                 // Don't bother updating/drawing the VertexBuffer while terrain is being regenerated
                 if (!pendingWorkCount)
@@ -267,7 +265,7 @@ int main()
 
     // Shut down our thread pool
     {
-        std::scoped_lock lock(workQueueMutex);
+        std::lock_guard lock(workQueueMutex);
         workPending = false;
     }
 
@@ -276,8 +274,6 @@ int main()
         threads.back().join();
         threads.pop_back();
     }
-
-    return EXIT_SUCCESS;
 }
 
 
@@ -307,7 +303,7 @@ float getElevation(float x, float y)
 
     float distance = 2.0f * std::sqrt(x * x + y * y);
     elevation      = (elevation + heightBase) * (1.0f - edgeFactor * std::pow(distance, edgeDropoffExponent));
-    elevation      = std::min(std::max(elevation, 0.0f), 1.0f);
+    elevation      = std::clamp(elevation, 0.0f, 1.0f);
 
     return elevation;
 }
@@ -344,7 +340,7 @@ float getMoisture(unsigned int x, unsigned int y)
 ////////////////////////////////////////////////////////////
 sf::Color colorFromFloats(float r, float g, float b)
 {
-    return sf::Color(static_cast<sf::Uint8>(r), static_cast<sf::Uint8>(g), static_cast<sf::Uint8>(b));
+    return sf::Color(static_cast<std::uint8_t>(r), static_cast<std::uint8_t>(g), static_cast<std::uint8_t>(b));
 }
 
 sf::Color getLowlandsTerrainColor(float moisture)
@@ -381,9 +377,9 @@ sf::Color getHighlandsTerrainColor(float elevation, float moisture)
 
     float factor = std::min((elevation - 0.4f) / 0.1f, 1.f);
 
-    color.r = static_cast<sf::Uint8>(lowlandsColor.r * (1.f - factor) + color.r * factor);
-    color.g = static_cast<sf::Uint8>(lowlandsColor.g * (1.f - factor) + color.g * factor);
-    color.b = static_cast<sf::Uint8>(lowlandsColor.b * (1.f - factor) + color.b * factor);
+    color.r = static_cast<std::uint8_t>(lowlandsColor.r * (1.f - factor) + color.r * factor);
+    color.g = static_cast<std::uint8_t>(lowlandsColor.g * (1.f - factor) + color.g * factor);
+    color.b = static_cast<std::uint8_t>(lowlandsColor.b * (1.f - factor) + color.b * factor);
 
     return color;
 }
@@ -402,9 +398,9 @@ sf::Color getSnowcapTerrainColor(float elevation, float moisture)
 
     float factor = std::min((elevation - snowcapHeight) / 0.05f, 1.f);
 
-    color.r = static_cast<sf::Uint8>(highlandsColor.r * (1.f - factor) + color.r * factor);
-    color.g = static_cast<sf::Uint8>(highlandsColor.g * (1.f - factor) + color.g * factor);
-    color.b = static_cast<sf::Uint8>(highlandsColor.b * (1.f - factor) + color.b * factor);
+    color.r = static_cast<std::uint8_t>(highlandsColor.r * (1.f - factor) + color.r * factor);
+    color.g = static_cast<std::uint8_t>(highlandsColor.g * (1.f - factor) + color.g * factor);
+    color.b = static_cast<std::uint8_t>(highlandsColor.b * (1.f - factor) + color.b * factor);
 
     return color;
 }
@@ -417,15 +413,15 @@ sf::Color getSnowcapTerrainColor(float elevation, float moisture)
 ////////////////////////////////////////////////////////////
 sf::Color getTerrainColor(float elevation, float moisture)
 {
-    sf::Color color = elevation < 0.11f ? sf::Color(0, 0, static_cast<sf::Uint8>(elevation / 0.11f * 74.f + 181.0f))
+    sf::Color color = elevation < 0.11f ? sf::Color(0, 0, static_cast<std::uint8_t>(elevation / 0.11f * 74.f + 181.0f))
                       : elevation < 0.14f
-                          ? sf::Color(static_cast<sf::Uint8>(std::pow((elevation - 0.11f) / 0.03f, 0.3f) * 48.f),
-                                      static_cast<sf::Uint8>(std::pow((elevation - 0.11f) / 0.03f, 0.3f) * 48.f),
+                          ? sf::Color(static_cast<std::uint8_t>(std::pow((elevation - 0.11f) / 0.03f, 0.3f) * 48.f),
+                                      static_cast<std::uint8_t>(std::pow((elevation - 0.11f) / 0.03f, 0.3f) * 48.f),
                                       255)
                       : elevation < 0.16f
-                          ? sf::Color(static_cast<sf::Uint8>((elevation - 0.14f) * 128.f / 0.02f + 48.f),
-                                      static_cast<sf::Uint8>((elevation - 0.14f) * 128.f / 0.02f + 48.f),
-                                      static_cast<sf::Uint8>(127.0f + (0.16f - elevation) * 128.f / 0.02f))
+                          ? sf::Color(static_cast<std::uint8_t>((elevation - 0.14f) * 128.f / 0.02f + 48.f),
+                                      static_cast<std::uint8_t>((elevation - 0.14f) * 128.f / 0.02f + 48.f),
+                                      static_cast<std::uint8_t>(127.0f + (0.16f - elevation) * 128.f / 0.02f))
                       : elevation < 0.17f         ? sf::Color(240, 230, 140)
                       : elevation < 0.4f          ? getLowlandsTerrainColor(moisture)
                       : elevation < snowcapHeight ? getHighlandsTerrainColor(elevation, moisture)
@@ -581,7 +577,7 @@ void threadFunction()
 
         // Check if there are new work items in the queue
         {
-            std::scoped_lock lock(workQueueMutex);
+            std::lock_guard lock(workQueueMutex);
 
             if (!workPending)
                 return;
@@ -604,7 +600,7 @@ void threadFunction()
         processWorkItem(vertices, workItem);
 
         {
-            std::scoped_lock lock(workQueueMutex);
+            std::lock_guard lock(workQueueMutex);
 
             --pendingWorkCount;
         }
@@ -626,7 +622,7 @@ void generateTerrain(sf::Vertex* buffer)
     for (;;)
     {
         {
-            std::scoped_lock lock(workQueueMutex);
+            std::lock_guard lock(workQueueMutex);
 
             if (workQueue.empty())
                 break;
@@ -637,7 +633,7 @@ void generateTerrain(sf::Vertex* buffer)
 
     // Queue all the new work items
     {
-        std::scoped_lock lock(workQueueMutex);
+        std::lock_guard lock(workQueueMutex);
 
         for (unsigned int i = 0; i < blockCount; ++i)
         {

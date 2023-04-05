@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2022 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2023 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -33,7 +33,6 @@
 
 #include <cstddef>
 #include <cstring>
-#include <mutex>
 #include <ostream>
 #include <utility>
 
@@ -42,8 +41,6 @@ namespace
 // A nested named namespace is used here to allow unity builds of SFML.
 namespace VertexBufferImpl
 {
-std::recursive_mutex isAvailableMutex;
-
 GLenum usageToGlEnum(sf::VertexBuffer::Usage usage)
 {
     switch (usage)
@@ -63,39 +60,29 @@ GLenum usageToGlEnum(sf::VertexBuffer::Usage usage)
 namespace sf
 {
 ////////////////////////////////////////////////////////////
-VertexBuffer::VertexBuffer() : m_buffer(0), m_size(0), m_primitiveType(Points), m_usage(Stream)
+VertexBuffer::VertexBuffer() = default;
+
+
+////////////////////////////////////////////////////////////
+VertexBuffer::VertexBuffer(PrimitiveType type) : m_primitiveType(type)
 {
 }
 
 
 ////////////////////////////////////////////////////////////
-VertexBuffer::VertexBuffer(PrimitiveType type) : m_buffer(0), m_size(0), m_primitiveType(type), m_usage(Stream)
+VertexBuffer::VertexBuffer(VertexBuffer::Usage usage) : m_usage(usage)
 {
 }
 
 
 ////////////////////////////////////////////////////////////
-VertexBuffer::VertexBuffer(VertexBuffer::Usage usage) : m_buffer(0), m_size(0), m_primitiveType(Points), m_usage(usage)
+VertexBuffer::VertexBuffer(PrimitiveType type, VertexBuffer::Usage usage) : m_primitiveType(type), m_usage(usage)
 {
 }
 
 
 ////////////////////////////////////////////////////////////
-VertexBuffer::VertexBuffer(PrimitiveType type, VertexBuffer::Usage usage) :
-m_buffer(0),
-m_size(0),
-m_primitiveType(type),
-m_usage(usage)
-{
-}
-
-
-////////////////////////////////////////////////////////////
-VertexBuffer::VertexBuffer(const VertexBuffer& copy) :
-m_buffer(0),
-m_size(0),
-m_primitiveType(copy.m_primitiveType),
-m_usage(copy.m_usage)
+VertexBuffer::VertexBuffer(const VertexBuffer& copy) : m_primitiveType(copy.m_primitiveType), m_usage(copy.m_usage)
 {
     if (copy.m_buffer && copy.m_size)
     {
@@ -266,10 +253,7 @@ bool VertexBuffer::update([[maybe_unused]] const VertexBuffer& vertexBuffer)
 
     glCheck(GLEXT_glBindBuffer(GLEXT_GL_ARRAY_BUFFER, 0));
 
-    if ((sourceResult == GL_FALSE) || (destinationResult == GL_FALSE))
-        return false;
-
-    return true;
+    return (sourceResult == GL_TRUE) && (destinationResult == GL_TRUE);
 
 #endif // SFML_OPENGL_ES
 }
@@ -287,7 +271,7 @@ VertexBuffer& VertexBuffer::operator=(const VertexBuffer& right)
 
 
 ////////////////////////////////////////////////////////////
-void VertexBuffer::swap(VertexBuffer& right)
+void VertexBuffer::swap(VertexBuffer& right) noexcept
 {
     std::swap(m_size, right.m_size);
     std::swap(m_buffer, right.m_buffer);
@@ -346,22 +330,15 @@ VertexBuffer::Usage VertexBuffer::getUsage() const
 ////////////////////////////////////////////////////////////
 bool VertexBuffer::isAvailable()
 {
-    std::scoped_lock lock(VertexBufferImpl::isAvailableMutex);
-
-    static bool checked   = false;
-    static bool available = false;
-
-    if (!checked)
+    static const bool available = []() -> bool
     {
-        checked = true;
-
         TransientContextLock contextLock;
 
         // Make sure that extensions are initialized
         sf::priv::ensureExtensionsInit();
 
-        available = GLEXT_vertex_buffer_object;
-    }
+        return GLEXT_vertex_buffer_object;
+    }();
 
     return available;
 }
@@ -372,6 +349,13 @@ void VertexBuffer::draw(RenderTarget& target, const RenderStates& states) const
 {
     if (m_buffer && m_size)
         target.draw(*this, 0, m_size, states);
+}
+
+
+////////////////////////////////////////////////////////////
+void swap(VertexBuffer& left, VertexBuffer& right) noexcept
+{
+    left.swap(right);
 }
 
 } // namespace sf
