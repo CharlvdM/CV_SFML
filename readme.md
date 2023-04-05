@@ -1,5 +1,7 @@
 [![SFML logo](https://www.sfml-dev.org/images/logo.png)](https://www.sfml-dev.org)
 
+Disclaimer: This is my copy of the SFML repository found here: https://github.com/SFML/SFML.git. The copy is needed to enable my own updates without interfering with the actual SFML repo. The rest of this README is as it was written by the author.
+
 # SFML — Simple and Fast Multimedia Library
 
 SFML is a simple, fast, cross-platform and object-oriented multimedia API. It provides access to windowing, graphics, audio and network. It is written in C++, and has bindings for various languages such as C, .Net, Ruby, Python.
