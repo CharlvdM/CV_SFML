@@ -57,18 +57,6 @@ namespace WglContextImpl
 thread_local sf::priv::WglContext* currentContext(nullptr);
 
 
-// We use a different loader for wgl functions since we load them directly from OpenGL32.dll
-sf::GlFunctionPointer getOpenGl32Function(const char* name)
-{
-    static const HMODULE module = GetModuleHandleA("OpenGL32.dll");
-
-    if (module)
-        return reinterpret_cast<sf::GlFunctionPointer>(GetProcAddress(module, reinterpret_cast<LPCSTR>(name)));
-
-    return nullptr;
-}
-
-
 ////////////////////////////////////////////////////////////
 void ensureInit()
 {
@@ -77,7 +65,7 @@ void ensureInit()
     {
         initialized = true;
 
-        gladLoadWGL(nullptr, getOpenGl32Function);
+        gladLoadWGL(nullptr, sf::priv::WglContext::getFunction);
     }
 }
 
@@ -92,7 +80,7 @@ void ensureExtensionsInit(HDC deviceContext)
 
         // We don't check the return value since the extension
         // flags are cleared even if loading fails
-        gladLoadWGL(deviceContext, getOpenGl32Function);
+        gladLoadWGL(deviceContext, sf::priv::WglContext::getFunction);
     }
 }
 } // namespace WglContextImpl
@@ -204,8 +192,6 @@ WglContext::~WglContext()
 ////////////////////////////////////////////////////////////
 GlFunctionPointer WglContext::getFunction(const char* name)
 {
-    assert(WglContextImpl::currentContext != nullptr);
-
     auto address = reinterpret_cast<GlFunctionPointer>(wglGetProcAddress(reinterpret_cast<LPCSTR>(name)));
 
     if (address)
@@ -217,9 +203,13 @@ GlFunctionPointer WglContext::getFunction(const char* name)
             return address;
     }
 
-    // If we are using the generic GDI implementation, try loading directly from OpenGL32.dll as well
-    if (WglContextImpl::currentContext->m_isGeneric)
-        return WglContextImpl::getOpenGl32Function(name);
+    static HMODULE module = nullptr;
+
+    if (!module)
+        module = GetModuleHandleA("OpenGL32.dll");
+
+    if (module)
+        return reinterpret_cast<GlFunctionPointer>(GetProcAddress(module, reinterpret_cast<LPCSTR>(name)));
 
     return nullptr;
 }
@@ -474,20 +464,6 @@ void WglContext::updateSettingsFromPixelFormat()
         err() << "Failed to retrieve pixel format information: " << getErrorString(GetLastError()).toAnsiString()
               << std::endl;
         return;
-    }
-
-    // Detect if we are running using the generic GDI implementation and warn
-    if (actualFormat.dwFlags & PFD_GENERIC_FORMAT)
-    {
-        m_isGeneric = true;
-
-        err() << "Warning: Detected \"Microsoft Corporation GDI Generic\" OpenGL implementation" << std::endl;
-
-        // Detect if the generic GDI implementation is not accelerated
-        if (!(actualFormat.dwFlags & PFD_GENERIC_ACCELERATED))
-            err() << "Warning: The \"Microsoft Corporation GDI Generic\" OpenGL implementation is not "
-                     "hardware-accelerated"
-                  << std::endl;
     }
 
     if (SF_GLAD_WGL_ARB_pixel_format)
